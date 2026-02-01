@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elemental Tactics: v14.9 Fixed</title>
+    <title>Elemental Tactics: v15.4 Fixed</title>
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -1180,6 +1180,9 @@ socket.on('gameStart', (data) => {
     globalRNG = new SeededRandom(gameSeed);
     console.log(`🎲 RNG 초기화 완료 (Seed: ${gameSeed})`);
     
+	// [Fix] 온라인 BGM 자동 재생
+    MusicEngine.play('Battle_Piano');
+	
     UI.closeModal();
     let roleText = myRole === 'player1' ? "🔵 선공 (1P)" : "🔴 후공 (2P)";
     alert("매칭 성공! " + roleText);
@@ -1384,53 +1387,108 @@ const Common = {
     basicAttack: function(atk, def, game) {
         AudioSys.play('HIT');
         const blindMod = atk.hasStatus('BLIND') ? 0 : 1;
-        if(blindMod === 0) { Common.logAction(game, 'miss', atk, def, 0, "(실명)"); UI.floatText(atk, "BLINDED", "ft-miss"); return; }
+        if(blindMod === 0) { 
+            // 실명 로그
+            Common.logAction(game, 'miss', atk, def, 0, "(실명)"); 
+            UI.floatText(atk, "BLINDED", "ft-miss"); 
+            return; 
+        }
+
         const baseAtk = atk.getAtk();
-        const aff = (def && def.team !== atk.team) ? game.calc(atk, def) : {v:1, t:''};
+
+        // [Fix] 세뇌(Team Kill) 시에도 상성 계산 적용
+        // (원래 같은 팀이면 상성 계산 안 하지만, 세뇌 상태면 계산하도록 변경)
+        const applyAffinity = (def && def.team !== atk.team) || (game.isMindControlling);
+        const aff = applyAffinity ? game.calc(atk, def) : {v:1, t:''};
+
         const dmg = Math.floor(baseAtk * 1.0 * aff.v * blindMod);
         const act = def.takeDamage(dmg, false, false, atk);
         game.recordStat(atk, 'dmg', Math.max(0, act));
+
         if(act !== -1) {
             Common.logAction(game, 'dmg', atk, def, act, aff.t);
             const isCrit = (act >= 200) || (atk.isNormal && def.isNormal && act > baseAtk);
             let type = isCrit ? "ft-crit" : "ft-dmg";
             if (aff.v > 1.0) type = "ft-weak";
             else if (aff.v < 1.0) type = "ft-resist";
+            
             UI.floatText(def, act, type);
+            
             if (isCrit || aff.v > 1.0) { 
                 AudioSys.play('CRITICAL'); 
                 UI.screenShake(); 
-                UI.hitStop(150); // ⚡ 히트 스톱 추가! (0.15초 멈춤)
+                UI.hitStop(150); 
             } else {
                 game.shake(def);
             }
+
+            // [Fix] 흡혈 통계 처리 (기본 공격)
             if ((atk.getKey() === 'Fire-Light') || atk.hasStatus('LIFESTEAL_BUFF')) {
                 const healAmt = Math.min(50, Math.floor(act * 0.25));
-                if(healAmt > 0) { atk.heal(healAmt); Common.logAction(game, 'heal', atk, atk, healAmt, "(흡혈)"); }
+                if(healAmt > 0) { 
+                    atk.heal(healAmt); 
+                    
+                    // 버프 제공자 찾기
+                    const buff = atk.status.find(s => s.type === 'LIFESTEAL_BUFF');
+                    if (buff && buff.sourceId !== -1 && buff.sourceId !== atk.id) {
+                        const allUnits = [...game.pTeam, ...game.eTeam];
+                        const provider = allUnits.find(u => u.id === buff.sourceId);
+                        if(provider) game.recordStat(provider, 'heal', healAmt);
+                    } else {
+                        Common.logAction(game, 'heal', atk, atk, healAmt, "(흡혈)"); 
+                    }
+                }
             }
         } else {
-            Common.logAction(game, 'miss', atk, def, 0); UI.floatText(def, "MISS", "ft-miss");
+            // [유지] 빗나감 로그 출력
+            Common.logAction(game, 'miss', atk, def, 0); 
+            UI.floatText(def, "MISS", "ft-miss");
         }
     },
     applyDamage: function(atk, def, mult, game, ignoreShield=false, isFire=false) {
         const blindMod = atk.hasStatus('BLIND') ? 0 : 1;
-        if(blindMod === 0) { UI.floatText(atk, "BLINDED", "ft-miss"); Common.logAction(game, 'miss', atk, def, 0, "(실명)"); return -1; }
+        if(blindMod === 0) { 
+            UI.floatText(atk, "BLINDED", "ft-miss"); 
+            Common.logAction(game, 'miss', atk, def, 0, "(실명)"); 
+            return -1; 
+        }
+        
         const baseAtk = atk.getAtk();
-        const aff = (def.team !== atk.team) ? game.calc(atk, def) : {v:1, t:''};
+
+        // [Fix] 세뇌(Team Kill) 시에도 상성 계산 적용
+        const applyAffinity = (def.team !== atk.team) || (game.isMindControlling);
+        const aff = applyAffinity ? game.calc(atk, def) : {v:1, t:''};
+
         const dmg = Math.floor(baseAtk * mult * aff.v);
         const act = def.takeDamage(dmg, isFire, ignoreShield, atk);
         game.recordStat(atk, 'dmg', Math.max(0, act));
+
         if(act !== -1) { 
             let type = act>=200 ? "ft-crit" : "ft-dmg";
             if (aff.v > 1.0) type = "ft-weak";
             else if (aff.v < 1.0) type = "ft-resist";
             UI.floatText(def, act, type); 
             game.shake(def); 
+
+            // [Fix] 흡혈 통계 처리 (스킬 공격)
             if ((atk.getKey() === 'Fire-Light') || atk.hasStatus('LIFESTEAL_BUFF')) {
                 const healAmt = Math.min(50, Math.floor(act * 0.25));
-                if(healAmt > 0) { atk.heal(healAmt); Common.logAction(game, 'heal', atk, atk, healAmt, "(흡혈)"); }
+                if(healAmt > 0) { 
+                    atk.heal(healAmt); 
+                    
+                    const buff = atk.status.find(s => s.type === 'LIFESTEAL_BUFF');
+                    if (buff && buff.sourceId !== -1 && buff.sourceId !== atk.id) {
+                        const allUnits = [...game.pTeam, ...game.eTeam];
+                        const provider = allUnits.find(u => u.id === buff.sourceId);
+                        if(provider) game.recordStat(provider, 'heal', healAmt);
+                    } else {
+                        Common.logAction(game, 'heal', atk, atk, healAmt, "(흡혈)"); 
+                    }
+                }
             }
         } else { 
+            // [유지] 빗나감 로그 출력
+            Common.logAction(game, 'miss', atk, def, 0);
             UI.floatText(def, "MISS", "ft-miss"); 
         }
         return act;
@@ -1767,8 +1825,8 @@ const SKILL_LOGIC = {
                     UI.floatText(def, "스택-1", "ft-miss");
                 }
                 
-                // [Balance] CC(기절/빙결/수면) 또는 맹독 상태면 데미지 50% 증가
-                const isCC = def.hasStatus('STUN') || def.hasStatus('FREEZE') || def.hasStatus('SLEEP');
+                // [Balance] CC(기절/빙결/수면) 또는 면역(CC종료 직후) 상태면 데미지 50% 증가
+                const isCC = def.hasStatus('STUN') || def.hasStatus('FREEZE') || def.hasStatus('SLEEP') || def.hasStatus('IMMUNITY');
                 const dmgMult = isCC ? 0.45 : 0.3; // 0.3의 1.5배 = 0.45
                 
                 const act = Common.applyDamage(atk, def, dmgMult, game);
@@ -2520,9 +2578,14 @@ const MusicEngine = {
         osc.type = type;
         osc.frequency.value = freq;
         if(detune) osc.detune.value = detune;
+
+        // [Fix] 마스터 볼륨 연동 (0일 때 0.5로 강제되는 버그 수정)
+        // AudioSys.masterVol이 정의되어 있으면 그것을 쓰고, 없으면 0.5를 씀
+        const master = (AudioSys.masterVol !== undefined) ? AudioSys.masterVol : 0.5;
+        const finalVol = vol * master * 0.3;
         
         gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(vol * 0.5, t + 0.02); // 볼륨 조절
+        gain.gain.linearRampToValueAtTime(finalVol, t + 0.02); 
         gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
 
         osc.connect(gain); gain.connect(MusicEngine.ctx.destination);
