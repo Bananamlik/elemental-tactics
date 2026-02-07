@@ -1325,6 +1325,7 @@
             <div id="preview-info" style="font-size:14px; color:#888; margin-bottom: 10px;">영웅을 클릭하면 정보가 나와요!</div>
             <div style="display:flex; align-items:center; gap:5px;">
                 <select id="diff-select" class="diff-select" style="flex:1;" onchange="Game.checkMode()">
+                      <option value="tutorial">📚 튜토리얼 (기초)</option>
                       <option value="easy" selected>🐣 쉬움 (AI)</option>
                       <option value="normal">🤖 보통 (AI)</option>
                       <option value="hard">🔥 어려움 (AI)</option>
@@ -1335,7 +1336,7 @@
                 <button class="btn-rnd" onclick="Game.randomPick()">🎲 랜덤</button>
             </div>
         </div>
-        
+ 
         <div style="display:flex; gap:10px; margin-top:10px;">
             <button id="btn-online" class="btn-start" style="flex:1; background:#7e57c2; font-size:16px;" onclick="UI.openOnlineModal()">
                 🌐 온라인 대전
@@ -1671,12 +1672,12 @@ const SKILL_DB = {
     
     'Metal-Dark': { s1:'전기충격', s1d:'1.5배+공격력10↑', s2:'방전', s2d:'광역 0.8배+기절(15%)', type:'AOE', target:'ALL_ENEMY', role:'nuker', icon:'⚡', desc:'메인 딜러<br>성장형 광역', passive:'⚡ 과부하: S1 사용 시 공격력이 10 증가합니다 (최대 3회).' },
     'Earth-Dark': { s1:'낙석', s1d:'1.5배', s2:'산사태', s2d:'2.35배+자가기절(1턴)', type:'ATK', target:'ENEMY', role:'nuker', icon:'🗿', desc:'메인 딜러<br>강력한 한방', passive:'🗿 반동: 산사태 사용 후 1턴간 [반동] 상태가 됩니다. 반동 상태에서는 받는 피해가 15 증가하며, 이는 정화되지 않습니다.' },
-    'Earth': { s1:'암석투척', s1d:'1.4배+버프파괴+CC', s2:'지진', s2d:'광역 0.8배 (1:1강화)', type:'AOE', target:'ALL_ENEMY', role:'nuker', icon:'🏜️', desc:'CC형 딜러<br>버프 파괴 / 기절', passive:null },
+    'Earth': { s1:'암석투척', s1d:'1.4배+버프해제+(기절25%/침묵20%)', s2:'지진', s2d:'광역 0.8배 (1:1강화)', type:'AOE', target:'ALL_ENEMY', role:'nuker', icon:'🏜️', desc:'CC형 딜러<br>버프 파괴 / 기절', passive:null },
     'Water-Dark': { s1:'고드름', s1d:'1.5배+데미지20%쉴드', s2:'절대영도', s2d:'1.0배+빙결(35%)', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'❄️', desc:'CC형 딜러<br>빙결 + 자가쉴드', passive:'❄️ 얼음 갑옷: S1 사용 시 입힌 데미지의 20%만큼 쉴드를 획득합니다.' },
-    'Metal-Light': { s1:'가스탄', s1d:'3뎀+피격대상1.0배(CC1.3배)', s2:'맹독살포', s2d:'전체독/치유감소20%', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'☣️', desc:'특수 딜러<br>나무(Tree) 카운터 / 힐밴', passive:null },
+    'Metal-Light': { s1:'가스탄', s1d:'3뎀+피격대상1.0배(CC걸린 적1.3배)', s2:'맹독살포', s2d:'전체독(35) 및 치유감소20% 3턴', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'☣️', desc:'특수 딜러<br>나무(Tree) 카운터 / 힐밴', passive:null },
     
     // [수정] 속박 -> 모래지옥(지속피해) 명시
-    'Earth-Light': { s1:'모래폭풍', s1d:'1.3배(관통)+쉴드타격0.6배', s2:'모래지옥', s2d:'지속피해(60)+치유감소(50%)', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'🦂', desc:'특수 딜러<br>쉴드 파괴자 / 힐러 억제', passive:null },
+    'Earth-Light': { s1:'모래폭풍', s1d:'1.3배(관통)+쉴드타격0.6배', s2:'모래지옥', s2d:'속박(60) 및 치유감소(50%) 2턴', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'🦂', desc:'특수 딜러<br>쉴드 파괴자 / 힐러 억제', passive:null },
     
     'Tree-Dark': { s1:'가시찌르기', s1d:'1.5배+복수(계수증가)', s2:'영혼결속', s2d:'아군결속/저항↑', type:'TARGET_BUFF', target:'ALLY', role:'nuker', icon:'🥀', desc:'특수 딜러<br>복수 + 결속', passive:'🥀 복수: 결속된 아군 사망 시 공격력+20, S1계수+0.3 영구 증가.' },
     
@@ -1691,7 +1692,7 @@ const SKILL_DB = {
     'Light-Light': { s1:'신의심판', s1d:'1.5배', s2:'성역', s2d:'전체 쉴드+50/정화', type:'BUFF', target:'ALL_ALLY', role:'supp', icon:'👼', desc:'메인 버퍼<br>정화 + 쉴드', passive:null },
     
     // [수정] 공깎 수치 조건 명시
-    'Dark': { s1:'다크볼', s1d:'1.5배+업보(피해30%/CC반사50%)', s2:'공포', s2d:'광역 0.4배/공20~35%↓', type:'AOE', target:'ALL_ENEMY', role:'supp', icon:'👻', desc:'광역 디버퍼<br>공포 + 쉴드파괴', passive:'👁️ 업보: 다크볼 피격자가 상태이상을 걸면 50% 확률로 반사.' },
+    'Dark': { s1:'다크볼', s1d:'1.5배+업보(피해량30%반사/CC반사)', s2:'공포', s2d:'광역 0.4배/공20~35%↓', type:'AOE', target:'ALL_ENEMY', role:'supp', icon:'👻', desc:'광역 디버퍼<br>공포 + 쉴드파괴', passive:'👁️ 업보: 다크볼 피격자가 상태이상을 걸면 50% 확률로 반사.' },
     
     // [수정] 코스트 20% -> 12% 수정
     'Dark-Dark': { s1:'심연일격', s1d:'0.8배+침묵(1턴)', s2:'정신지배', s2d:'HP12%소모/세뇌(30~55%)', type:'DEBUFF', target:'ENEMY', role:'supp', icon:'🧠', desc:'심연의 지배자<br>적 제어권 탈취', passive:'🌑 심연의 힘: 세뇌 성공률은 기본 30%이며, 대상의 체력이 낮을수록 최대 55%까지 증가합니다. 성공 시 다음 턴 적을 1회 조종합니다.' }
@@ -2616,6 +2617,11 @@ class Unit {
     }
 
     checkAwakening() {
+        // [신규] 튜토리얼 모드에서는 각성 발동 금지 (도감 오염 방지)
+        if (typeof Game !== 'undefined' && Game.difficulty === 'tutorial') return;
+
+        if (this.isSuper) return;
+        let trigger = false;
         // [Balance] 쉴드 최대량 400으로 제한
         if (this.shield > 400) this.shield = 400;
 
@@ -2663,10 +2669,12 @@ if (awakened) {
     getAtk() {
         let v = this.atk;
         if (this.base === 'Fire' && !this.extra) {
-            const turn = Game.turnCount;
-            if (turn <= 12) v += 15;
-            else if (turn <= 36) v += 10;
-            else v += 5;
+            // [수정] 턴(행동수) 대신 라운드(사이클) 기준 적용
+            const r = (typeof Game !== 'undefined' && Game.globalRound) ? Game.globalRound : 1;
+            
+            if (r <= 2) v += 15;      // 1~2라운드 (초반)
+            else if (r <= 6) v += 10; // 3~6라운드 (중반)
+            else v += 5;              // 7라운드 이후 (후반)
         }
         if (this.revengeAtk > 0) v += this.revengeAtk;
         const lightMight = this.status.find(s => s.type === 'LIGHT_MIGHT');
@@ -3348,11 +3356,12 @@ const UI = {
             </div>`;
         });
 
-        // [수정됨] 후공 보너스 설명이 포함된 컨텐츠 HTML
+        // [수정됨] 탭 2 (시스템 규칙) 추가된 컨텐츠 HTML
         const content = `
         <div class="tab-header">
             <button class="tab-btn active" onclick="UI.switchTab(0)">📊 상성표</button>
             <button class="tab-btn" onclick="UI.switchTab(1)">📖 도감</button>
+            <button class="tab-btn" onclick="UI.switchTab(2)">⚙️ 시스템</button>
         </div>
         
         <div id="tab-0" class="tab-content active">
@@ -3375,16 +3384,51 @@ const UI = {
             <div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid #90caf9;">
                 <h4 style="margin: 0 0 5px 0; color: #1565c0;">🛡️ 후공(2P) 전술 보너스</h4>
                 <p style="font-size: 0.9em; margin: 0; color: #424242;">
-                    불리한 후공을 위해 특별한 효과가 부여됩니다.<br>
                     1. <b>모든 유닛:</b> 시작 시 행동 불가 <span style="color:#2980b9;">면역</span><br>
-                    2. <b>선봉장(1번 유닛):</b> 1턴간 <b style="color:red;">최종 데미지 10% 증가</b><br>
-                    <span style="font-size:0.85em; color:#555;">(TIP: 1번 자리에 강력한 딜러를 배치해 카운터를 노리세요!)</span>
+                    2. <b>선봉장(1번 유닛):</b> 1턴간 <b style="color:red;">최종 데미지 10% 증가</b>
                 </p>
             </div>
         </div>
         
         <div id="tab-1" class="tab-content" style="max-height: 50vh; overflow-y:auto;">
             ${heroList}
+        </div>
+
+        <div id="tab-2" class="tab-content" style="max-height: 50vh; overflow-y:auto; font-size:13px; color:#555;">
+            <div style="margin-bottom:15px;">
+                <h4 style="color:#ff7043; border-bottom:2px solid #ffcc80; padding-bottom:3px;">☠️ 상태이상 데미지 (고정)</h4>
+                <ul style="padding-left:20px; margin:5px 0;">
+                    <li><b>🔥 화상:</b> 턴 시작 시 <b style="color:#ff5722;">20</b> 피해 (Fire로부터 받는 피해 25% 증가)</li>
+                    <li><b>☠️ 맹독:</b> 턴 시작 시 <b style="color:#9c27b0;">35</b> 피해</li>
+                    <li><b>⏳ 속박(모래지옥):</b> 턴 시작 시 <b style="color:#f57f17;">60</b> 피해</li>
+                </ul>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <h4 style="color:#ffd700; border-bottom:2px solid #fff176; padding-bottom:3px;">⚡ 각성(Super Hero) 조건</h4>
+                <p style="margin:5px 0; font-size:12px;">조건 달성 시 테두리가 빛나며 스탯 기록됨.</p>
+                <ul style="padding-left:20px; margin:5px 0;">
+                    <li><b>⚔️ 딜러:</b> 2킬 이상 OR 누적 데미지 <b style="color:#f44336;">1500</b></li>
+                    <li><b>🛡️ 탱커:</b> 누적 받은 피해 <b style="color:#2196f3;">1000</b></li>
+                    <li><b>🧩 지원:</b> 누적 힐+쉴드 제공량 <b style="color:#4caf50;">1000</b></li>
+                </ul>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <h4 style="color:#ef5350; border-bottom:2px solid #e57373; padding-bottom:3px;">💀 서든 데스 (데스매치)</h4>
+                <p style="margin:5px 0;">
+                    <b>15라운드</b>(약 90턴)가 지나면, 모든 영웅의 공격력이 매 턴 <b style="color:red;">+10</b>씩 영구 증가합니다.
+                </p>
+            </div>
+
+            <div>
+                <h4 style="color:#78909c; border-bottom:2px solid #b0bec5; padding-bottom:3px;">ℹ️ 기타 상세 규칙</h4>
+                <ul style="padding-left:20px; margin:5px 0;">
+                    <li><b>⛰️ 흙(Earth) S1:</b> 25% 기절 / 20% 침묵 / 55% 효과없음</li>
+                    <li><b>🛡️ 쇠(Metal) 패시브:</b> 쉴드가 있을 때만 발동 (최대체력 20% 초과분 삭제)</li>
+                    <li><b>🧠 세뇌 비용:</b> 시전자 현재 체력의 <b>12%</b> 소모</li>
+                </ul>
+            </div>
         </div>`;
         
         this.showModal("📘 가이드북", content);
@@ -4259,111 +4303,140 @@ const Game = {
 
         } else {
             // =========================================
-            // [2] 기존 PVE (AI 대전) 로직
+            // [2] PVE (싱글/튜토리얼) 통합 로직
             // =========================================
-            this.pTeam = this.selected.map((idx, i) => {
-                const u = this.pool[idx];
-                u.id = i;
-                u.team = 0;
-                return u;
-            });
-            this.eTeam = [];
-            const makeEnemy = (idx, b, e) => {
-                return new Unit(idx + 3, 1, b, e);
-            };
+            
+            // 🟢 [A] 튜토리얼 모드: 강제 세팅
+            if (this.difficulty === 'tutorial') {
+                if (!this.tStage) this.tStage = 1; 
+                
+                let pDeck = [], eDeck = [];
+                let guideMsg = "";
 
-            if (this.difficulty === 'hell') {
-                if (this.challengeStage >= ChallengeDB.length) this.challengeStage = ChallengeDB.length - 1;
-                const stageData = ChallengeDB[this.challengeStage];
-                let currentTeamList = [...stageData.team];
-                if (!stageData.fixedOrder) {
-                    currentTeamList.sort(() => Math.random() - 0.5);
+                // 단계별 데이터 정의
+                if (this.tStage === 1) {
+                    // [수정] 1단계: 불 vs 나무/물/쇠
+                    pDeck = ['Fire', 'Normal', 'Normal'];
+                    eDeck = ['Tree', 'Water', 'Metal'];
+                    guideMsg = "Lesson 1: <b>속성 상성 기초</b><br>불(🔥)로 적들을 공격하며 데미지(약점/저항) 차이를 확인하세요!<br>(적은 훈련용 샌드백 상태입니다)";
+                } else if (this.tStage === 2) {
+                    // 2단계: 탱커/딜러
+                    pDeck = ['Metal', 'Water', 'Normal'];
+                    eDeck = ['Earth', 'Earth'];
+                    guideMsg = "Lesson 2: 쇠(⚔️)의 <b>[도발]</b>로 아군을 보호하고, 💧 물로 공격하세요!";
+                } else if (this.tStage === 3) {
+                    // 3단계: 힐/CC (여기가 문제였음)
+                    pDeck = ['Tree', 'Metal-Dark', 'Normal'];
+                    eDeck = ['Metal-Light', 'Metal'];
+                    guideMsg = "Lesson 3: 나무(🌿)의 <b>[치유]</b>와 ⚡ 전기의 <b>[성장]</b>을 활용하세요!";
+                } else {
+                    alert("🎉 튜토리얼 완료! 이제 실전입니다.");
+                    this.tStage = 1; location.reload(); return;
                 }
-                this.eTeam = currentTeamList.map((key, i) => {
-                    let b, e;
-                    if (key === 'Normal') { b = 'Normal'; e = null; } 
-                    else if (key.includes('-')) { [b, e] = key.split('-'); } 
-                    else { b = key; e = null; }
-                    return makeEnemy(i, b, e);
-                });
-            } else if (this.difficulty === 'mirror') {
-                this.eTeam = this.pTeam.map((pu, i) => {
-                    const u = new Unit(i + 3, 1, pu.base, pu.extra);
-                    u.maxHp = Math.floor(u.maxHp * 1.15);
-                    u.hp = u.maxHp;
-                    u.atk = Math.floor(u.atk * 1.15);
-                    return u;
-                });
-            } else if (this.difficulty === 'easy') {
-                const basics = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'];
-                while (this.eTeam.length < 3) {
-                    const b = basics[Math.floor(Math.random() * basics.length)];
-                    if (!this.eTeam.some(u => u.base === b)) {
-                        this.eTeam.push(makeEnemy(this.eTeam.length, b, null));
+
+                // [중요] 플레이어 팀 생성 (복합 속성 파싱 로직 포함 - 하나만 있어야 함!)
+                this.pTeam = pDeck.map((key, i) => {
+                    let base = key, extra = null;
+                    // '-'가 있으면 분리, 없으면 그대로
+                    if (key !== 'Normal' && key.includes('-')) {
+                        [base, extra] = key.split('-');
+                    } else {
+                        base = key;
                     }
-                }
-            } else if (this.difficulty === 'hard') {
-                // 🟢 [수정] 하드모드: 플레이어 덱을 분석하여 카운터(유리한) 덱 선정
-                const pDeck = this.pTeam;
-                const advMap = {
-                    'Fire': ['Metal', 'Tree'], 'Water': ['Fire', 'Metal'], 'Tree': ['Water', 'Earth'],
-                    'Metal': ['Tree', 'Earth'], 'Earth': ['Fire', 'Water'],
-                    'Light': ['Dark'], 'Dark': ['Light'],
-                    'Light-Light': ['Dark', 'Dark-Dark'], 'Dark-Dark': ['Light', 'Light-Light'],
-                    'Fire-Light': ['Metal', 'Tree', 'Dark'], 'Fire-Dark': ['Metal', 'Tree', 'Light']
-                };
-
-                let bestIdx = 0;
-                let maxScore = -999;
-
-                // ChallengeDB(검증된 덱들) 중에서 가장 유리한 덱을 탐색
-                ChallengeDB.forEach((stage, idx) => {
-                    let score = 0;
-                    stage.team.forEach(eKey => {
-                        const eBase = eKey.split('-')[0];
-                        pDeck.forEach(pUnit => {
-                            const pBase = pUnit.base;
-                            // 적이 플레이어에게 강하면 +1점 (카운터)
-                            if (advMap[eBase] && advMap[eBase].includes(pBase)) score += 1.5;
-                            // 적이 플레이어에게 약하면 -1점
-                            if (advMap[pBase] && advMap[pBase].includes(eBase)) score -= 1.0;
-                        });
-                    });
-
-                    // 점수가 높거나, 같으면 50% 확률로 교체 (매번 같은 덱 방지)
-                    if (score > maxScore || (score === maxScore && Math.random() < 0.5)) {
-                        maxScore = score;
-                        bestIdx = idx;
-                    }
-                });
-
-                const targetDeck = ChallengeDB[bestIdx].team;
-                this.eTeam = targetDeck.map((key, i) => {
-                    let b, e;
-                    if (key === 'Normal') { b = 'Normal'; e = null; } 
-                    else if (key.includes('-')) { [b, e] = key.split('-'); } 
-                    else { b = key; e = null; }
                     
-                    const u = makeEnemy(i, b, e);
-                    // [하드 보정] 공격력 1.1배, 체력 1.1배
-                    u.atk = Math.floor(u.atk * 1.1);
-                    u.maxHp = Math.floor(u.maxHp * 1.1);
-                    u.hp = u.maxHp;
+                    const u = new Unit(i, 0, base, extra);
+                    if(key === 'Normal') { u.hp = 0; u.isDead = true; } 
                     return u;
                 });
                 
-                this.log(`<span class='log-sys' style="color:red;">🔥 Hard Mode: 적이 당신의 약점을 공략합니다! (${ChallengeDB[bestIdx].name})</span>`);
+                // [중요] 적 팀 생성 (복합 속성 파싱 + 너프 로직)
+                this.eTeam = eDeck.map((key, i) => {
+                    let base = key, extra = null;
+                    if (key !== 'Normal' && key.includes('-')) {
+                        [base, extra] = key.split('-');
+                    } else {
+                        base = key;
+                    }
+
+                    const u = new Unit(i+3, 1, base, extra);
+                    
+                    if (this.tStage === 1) {
+                        // 1단계: 샌드백
+                        u.maxHp = 100; u.hp = 100;
+                        u.addStatus('SILENCE', 999, 0, null, true);
+                        u.name = `[훈련] ${u.name}`;
+                    } else if (this.tStage === 2) {
+                        // 2단계: 체력 40%
+                        u.maxHp = Math.floor(u.maxHp * 0.4); u.hp = u.maxHp;
+                        u.name = `[실습] ${u.name}`;
+                    } else {
+                        // 3단계: 체력 50%
+                        u.maxHp = Math.floor(u.maxHp * 0.5); u.hp = u.maxHp;
+                        u.name = `[실습] ${u.name}`;
+                    }
+                    return u;
+                });
+
+                // 시작 시 가이드 메시지 예약
+                setTimeout(() => UI.showModal(`Lesson ${this.tStage}`, guideMsg), 500);
+
             } else {
-                const used = new Set();
-                while (this.eTeam.length < 3) {
-                    const b = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'][Math.floor(Math.random() * 7)];
-                    const e = [null, 'Light', 'Dark'][Math.floor(Math.random() * 3)];
-                    if (b === 'Dark' && e === 'Light') continue;
-                    let key = `${b}-${e}`;
-                    if (b === 'Light' && e === 'Dark') key = 'Normal';
-                    if (!used.has(key)) {
-                        used.add(key);
-                        this.eTeam.push(makeEnemy(this.eTeam.length, b, e));
+                // 🔵 [B] 일반 PVE 모드: 플레이어 선택 기반 생성
+                if (!this.selected || this.selected.length < 3) {
+                    alert("영웅 3명을 선택하거나 '랜덤'을 누르세요!"); return; 
+                }
+
+                this.pTeam = this.selected.map((idx, i) => {
+                    const u = this.pool[idx];
+                    u.id = i; u.team = 0;
+                    return u;
+                });
+                
+                this.eTeam = [];
+                const makeEnemy = (idx, b, e) => new Unit(idx + 3, 1, b, e);
+
+                if (this.difficulty === 'hell') {
+                    if (this.challengeStage >= ChallengeDB.length) this.challengeStage = ChallengeDB.length - 1;
+                    const stageData = ChallengeDB[this.challengeStage];
+                    let currentTeamList = [...stageData.team];
+                    if (!stageData.fixedOrder) currentTeamList.sort(() => Math.random() - 0.5);
+                    this.eTeam = currentTeamList.map((key, i) => {
+                        let b, e;
+                        if (key === 'Normal') { b = 'Normal'; e = null; } 
+                        else if (key.includes('-')) { [b, e] = key.split('-'); } 
+                        else { b = key; e = null; }
+                        return makeEnemy(i, b, e);
+                    });
+                } else if (this.difficulty === 'mirror') {
+                    this.eTeam = this.pTeam.map((pu, i) => {
+                        const u = new Unit(i + 3, 1, pu.base, pu.extra);
+                        u.maxHp = Math.floor(u.maxHp * 1.15); u.hp = u.maxHp; u.atk = Math.floor(u.atk * 1.15);
+                        return u;
+                    });
+                } else if (this.difficulty === 'easy') {
+                    const basics = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'];
+                    while (this.eTeam.length < 3) {
+                        const b = basics[Math.floor(Math.random() * basics.length)];
+                        if (!this.eTeam.some(u => u.base === b)) this.eTeam.push(makeEnemy(this.eTeam.length, b, null));
+                    }
+                } else if (this.difficulty === 'hard') {
+                    const used = new Set();
+                    while (this.eTeam.length < 3) {
+                        const b = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'][Math.floor(Math.random() * 7)];
+                        const e = [null, 'Light', 'Dark'][Math.floor(Math.random() * 3)];
+                        let key = `${b}-${e}`;
+                        if (!used.has(key)) { used.add(key); this.eTeam.push(makeEnemy(this.eTeam.length, b, e)); }
+                    }
+                    this.eTeam.forEach(u => { u.atk = Math.floor(u.atk*1.1); u.maxHp = Math.floor(u.maxHp*1.1); u.hp = u.maxHp; });
+                } else {
+                    const used = new Set();
+                    while (this.eTeam.length < 3) {
+                        const b = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'][Math.floor(Math.random() * 7)];
+                        const e = [null, 'Light', 'Dark'][Math.floor(Math.random() * 3)];
+                        if (b === 'Dark' && e === 'Light') continue;
+                        let key = `${b}-${e}`;
+                        if (b === 'Light' && e === 'Dark') key = 'Normal';
+                        if (!used.has(key)) { used.add(key); this.eTeam.push(makeEnemy(this.eTeam.length, b, e)); }
                     }
                 }
             }
@@ -4383,6 +4456,7 @@ const Game = {
         }
         
         this.turnCount = 1;
+        this.globalRound = 1; // [신규] 라운드 카운터 초기화
         this.isProcessing = false;
         
         document.getElementById('selection-screen').style.display = 'none';
@@ -4438,7 +4512,7 @@ turn: function() {
             if(cp) cp.style.borderTop = "5px solid #ccc";
         }
 
-        const round = Math.ceil(this.turnCount / 6);
+        const round = this.globalRound;
         const tVal = this.queue[this.curr];
         
         // [Fix] 유닛 정의 및 null/undefined 체크 강화
@@ -4449,6 +4523,21 @@ turn: function() {
             console.error('❌ Turn error: Unit not found or dead', { tVal, u });
             this.endTurn(true);
             return;
+        }
+
+// [신규] 튜토리얼 인게임 팁 (턴 시작 시)
+        if (this.difficulty === 'tutorial' && u && u.team === 0 && !u.isDead) {
+            let tip = "";
+            if (this.tStage === 1) tip = "Tip: 불(Fire) 스킬로 나무를 공격하세요! (1.2배)";
+            if (this.tStage === 2) {
+                 if(u.base === 'Metal') tip = "Tip: 2번 스킬 [결투 신청]을 써서 어그로를 끄세요!";
+                 else if(u.base === 'Water') tip = "Tip: 쇠가 맞는 동안 물 속성으로 딜을 넣으세요!";
+            }
+            if (this.tStage === 3) {
+                 if(u.base === 'Tree') tip = "Tip: 아군이 위험하면 2번 스킬 [치유]를 쓰세요.";
+                 else if(u.base.includes('Metal')) tip = "Tip: 전기의 공격은 반복할수록 강해집니다.";
+            }
+            if (tip) this.log(`<span style="color:#2ecc71; font-weight:bold;">${tip}</span>`);
         }
 
         // 2. [로직 삭제됨] 즉시 제어권 탈취 방식으로 변경되어, 사전 준비(MC_READY) 단계가 불필요합니다.
@@ -4860,14 +4949,16 @@ endTurn: function(isFast = false) {
         
         this.curr = (this.curr + 1) % 6;
         
-        // 데스매치 로직
+        // [수정] 큐가 한 바퀴 돌아 0번(첫 순서)이 되면 라운드 증가
         if (this.curr === 0) {
-            const round = Math.ceil(this.turnCount / 6);
-            if (round > 15) {
+            this.globalRound++;
+
+            // [수정] 데스매치 로직 (globalRound 기준)
+            if (this.globalRound > 15) {
                 [...this.pTeam, ...this.eTeam].forEach(u => {
                     if (!u.isDead) u.atk += 10;
                 });
-                this.log("<span class='log-crit'>💀 데스매치! 모든 영웅 공격력 +10</span>");
+                this.log(`<span class='log-crit'>💀 데스매치! (Round ${this.globalRound}) 모든 영웅 공격력 +10</span>`);
             }
         }
         
@@ -5716,6 +5807,50 @@ ai: function(u) {
             if (this.timer) clearTimeout(this.timer);
             AudioSys.play('WIN');
             MusicEngine.stop(); // [Fix] 신형 엔진 정지
+
+            // [신규] 튜토리얼 승리/패배 처리 (start() 재호출로 연결)
+            if (this.difficulty === 'tutorial') {
+                if (pd) { // 패배
+                    UI.showModal("Defeat... 😢", 
+                        `<p>괜찮습니다. 다시 도전해보세요!</p>
+                         <button onclick="Game.start()" 
+                         style="padding:10px 20px; background:#ff7043; color:white; border:none; border-radius:10px; font-size:16px; cursor:pointer;">
+                         재도전 🔄
+                         </button>`
+                    );
+                } else { // 승리
+                     UI.showModal("Victory! 🎓", 
+                        `<p>훌륭합니다! 핵심 전략을 이해하셨군요.</p>
+                         <button onclick="Game.tStage++; Game.start();" 
+                         style="padding:10px 20px; background:#4caf50; color:white; border:none; border-radius:10px; font-size:16px; cursor:pointer;">
+                         다음 레슨으로 ➡️
+                         </button>`
+                    );
+                }
+                return true;
+            }
+
+// [신규] 튜토리얼 승리/패배 처리 인터셉트
+            if (this.difficulty === 'tutorial') {
+                if (pd) { // 패배 (Player Dead)
+                    UI.showModal("Defeat... 😢", 
+                        `<p>괜찮습니다. 다시 도전해보세요!</p>
+                         <button onclick="Game.runTutorialLevel()" 
+                         style="padding:10px 20px; background:#ff7043; color:white; border:none; border-radius:10px; font-size:16px; cursor:pointer;">
+                         재도전 🔄
+                         </button>`
+                    );
+                } else { // 승리
+                     UI.showModal("Victory! 🎓", 
+                        `<p>훌륭합니다! 핵심 전략을 이해하셨군요.</p>
+                         <button onclick="Game.tStage++; Game.runTutorialLevel();" 
+                         style="padding:10px 20px; background:#4caf50; color:white; border:none; border-radius:10px; font-size:16px; cursor:pointer;">
+                         다음 레슨으로 ➡️
+                         </button>`
+                    );
+                }
+                return true; // 여기서 종료 (기본 결과창 출력 방지)
+            }
 
             if (pd && ed) {
                 UI.showResult("무승부 (Draw)");
