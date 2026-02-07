@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elemental Tactics: v15.4 Fixed</title>
+    <title>Elemental Tactics v18.0 Refactored & Debugged</title>
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -165,53 +165,49 @@
             flex: 1;
         }
 
+        /* [선택 화면용 카드 스타일] 전투 유닛(.unit) 스타일을 베이스로 함 */
         .hero-card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 6px;
+            /* .unit 클래스와 함께 사용될 것이므로, 레이아웃 관련만 재정의 */
+            position: relative;
             cursor: pointer;
             transition: 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05), inset 0 0 0 3px #fce4ec;
-            position: relative;
-            min-height: 100px;
-            justify-content: center;
+            /* 그리드 안에서 꽉 차게 */
+            width: 100% !important; 
+            max-width: none !important;
+            height: 200px !important; /* 높이 통일 */
+            margin: 0;
+            opacity: 0.9;
         }
 
-        .hero-card:active {
-            transform: scale(0.95);
-        }
+        .hero-card:hover { transform: translateY(-3px); z-index: 10; opacity: 1; }
+        .hero-card:active { transform: scale(0.98); }
 
+        /* [선택됨 효과] */
         .hero-card.selected {
-            background: #e1bee7;
-            box-shadow: 0 0 0 3px var(--accent), 0 8px 20px rgba(255, 128, 171, 0.4);
+            border: 3px solid #d500f9 !important; /* 보라색 테두리 */
+            box-shadow: 0 0 15px #d500f9, inset 0 0 10px rgba(213, 0, 249, 0.2) !important;
             transform: translateY(-5px);
+            z-index: 20;
+            opacity: 1;
         }
 
+        /* 선택 체크 표시 (우측 상단) */
         .hero-card.selected::after {
-            content: '🐾';
+            content: '✅';
             position: absolute;
-            top: -10px;
-            right: -5px;
-            background: var(--accent);
-            color: #fff;
-            width: 28px;
-            height: 28px;
+            top: -10px; right: -10px;
+            font-size: 24px;
+            background: #fff;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-            z-index: 5;
-            border: 2px solid #fff;
+            width: 30px; height: 30px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 30;
         }
 
         /* 전투 유닛 (Battle Unit) */
         .field-row {
-            flex: 1;
+            flex: 2; /* 1에서 2로 변경하여 상/하단 카드 영역을 더 넓게 확보 */
             display: flex;
             justify-content: space-evenly;
             align-items: center;
@@ -221,27 +217,124 @@
             min-height: 0;
         }
 
-        .unit {
-            width: 30vw;
-            max-width: 130px;
-            background: #fff;
-            border-radius: 20px;
-            padding: 8px 4px;
-            position: relative;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: default;
-            box-shadow: inset 0 4px 10px rgba(255, 255, 255, 1), 0 8px 0 #e0e0e0, 0 15px 20px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 110px;
-            justify-content: flex-end;
-            border: 2px solid #f8bbd0;
-            flex-shrink: 1;
-            user-select: none;
-            -webkit-user-select: none;
-        }
+        /* === [신규] 유닛 카드 디자인 === */
+    .unit {
+        width: 30vw;          /* 모바일: 화면 너비의 30% */
+        max-width: 160px;     /* PC/태블릿: 최대 160px까지 확대 (기존 110px) */
+        height: 220px;        /* 높이 대폭 확대 (기존 150px) */
+        background: #fff;
+        border-radius: 12px;
+        position: relative;
+        transition: 0.2s;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        border: 2px solid #fff;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        user-select: none;
+        cursor: pointer;
+    }
+
+    /* [폰트/UI 크기 보정] 카드가 커진 만큼 글자와 아이콘도 키움 */
+    .unit .card-name { font-size: 14px; margin-bottom: 4px; }
+    .unit .card-atk { font-size: 13px; padding: 3px 6px; }
+    .unit .tiny-icon { width: 30px; height: 30px; font-size: 18px; }
+    .unit .card-badge { top: 8px; left: 8px; gap: 4px; }
+    .unit .status-bar { height: 8px; }
+
+    /* 배경 이미지 영역 */
+    .unit-img-bg {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+        transition: 0.3s;
+    }
+
+    /* 죽었을 때 흑백 처리 */
+    .unit.dead .unit-img-bg {
+        filter: grayscale(1) brightness(0.7);
+    }
+
+    /* 정보 오버레이 (하단 검은 그라데이션) */
+    .unit-info-overlay {
+        position: relative;
+        z-index: 2;
+        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 70%, transparent 100%);
+        padding: 6px 4px;
+        width: 100%;
+        box-sizing: border-box;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    /* 상단 속성 아이콘 */
+    .card-badge {
+        position: absolute;
+        top: 4px; left: 4px;
+        width: 24px; height: 24px;
+        background: rgba(255,255,255,0.9);
+        border-radius: 50%;
+        display: flex; justify-content: center; align-items: center;
+        font-size: 16px;
+        z-index: 2;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        border: 1px solid #eee;
+    }
+
+    /* 우측 상단 공격력 */
+    .card-atk {
+        position: absolute;
+        top: 5px; right: 5px;
+        background: rgba(0,0,0,0.6);
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-size: 10px;
+        color: #fff;
+        font-weight: bold;
+        z-index: 2;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* 이름 텍스트 */
+    .card-name {
+        font-size: 11px;
+        font-weight: bold;
+        text-align: center;
+        text-shadow: 0 1px 2px #000;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+    }
+
+    /* 상태 태그 컨테이너 (위치 조정) */
+    .tag-container {
+        position: absolute;
+        bottom: 40px;
+        left: 0; right: 0;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 2px;
+        z-index: 5;
+        pointer-events: none;
+    }
+
+    /* 선택/타겟 이펙트 */
+    .unit.active-turn { border-color: var(--accent); transform: translateY(-5px); box-shadow: 0 0 15px var(--accent); }
+    .unit.target-enemy { border-color: #ff5252; background: #ffebee; }
+    /* content에서 이모지 삭제 */
+    .unit.target-enemy::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:40px; z-index:10; text-shadow:0 0 10px red; opacity:0.8; }
+
+    /* 기존 체력바 스타일 재정의 (강제 적용) */
+
+    /* 기존 체력바 스타일 재정의 (강제 적용) */
+    .unit-info-overlay .status-bar { height: 6px; background: rgba(255,255,255,0.3); border: none; margin-top:2px; width: 100%; }
 
         /* 각성 스타일 (Super Hero) */
         .unit.super-hero {
@@ -293,9 +386,32 @@
             box-shadow: none;
         }
 
-        .unit.role-tank { border-radius: 20px; }
-        .unit.role-nuker { border-radius: 35px 15px; }
-        .unit.role-supp { border-radius: 50px; }
+        /* [모양 통일] 모든 역할군 둥근 사각형으로 고정 */
+        .unit.role-tank, .unit.role-nuker, .unit.role-supp { border-radius: 12px !important; }
+
+        /* [신규] 왼쪽 상단 속성 아이콘 컨테이너 */
+        .card-badge {
+            position: absolute;
+            top: 5px; left: 5px;
+            width: auto !important; height: auto !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            display: flex;
+            flex-direction: row; /* 옆으로 나란히 */
+            gap: 2px;
+            z-index: 5;
+        }
+        /* 개별 아이콘 스타일 */
+        .tiny-icon {
+            width: 24px; height: 24px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            border: 1px solid #ddd;
+        }
 
         .attr-icon {
             width: 44px;
@@ -330,10 +446,33 @@
 
         .elec-badge {
             position: absolute;
-            top: -5px;
-            right: -5px;
+            /* [수정] 카드 안쪽으로 안전하게 배치하여 잘림 방지 */
+            top: 30px;  
+            right: 4px;
             background: #ffeb3b;
             color: #f57f17;
+            font-weight: 900;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 5;
+            animation: jelly-bounce 1s infinite;
+        }
+
+        /* [신규] 나무 스택 뱃지 (Metal-Dark 참고) */
+        .tree-badge {
+            position: absolute;
+            /* [수정] 카드 안쪽으로 안전하게 배치하여 잘림 방지 */
+            top: 30px; 
+            right: 4px;
+            background: #66bb6a; /* 초록색 */
+            color: #fff;
             font-weight: 900;
             border: 2px solid #fff;
             border-radius: 50%;
@@ -405,27 +544,56 @@
             z-index: 20;
         }
 
+        /* [레이아웃 압축] 헤더에 타임라인 통합 */
         .cp-header {
-            padding: 8px 15px;
+            padding: 5px 10px;
             background: #fff8e1;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px dashed #ffe082;
-            font-size: 14px;
-        }
-
-        .timeline-container {
-            height: 40px;
-            background: #fff;
-            border-bottom: 2px dashed #ffcdd2;
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-            overflow: hidden;
-            gap: 5px;
+            font-size: 13px;
+            height: 40px; /* 높이 고정 */
             flex-shrink: 0;
         }
+        
+        /* 기존 타임라인 컨테이너 삭제 (헤더로 이동됨) */
+        .timeline-container { display: none; } 
+
+        /* [신규] 왼쪽 사이드 플로팅 컨트롤 */
+        /* [사이드 메뉴 스타일] */
+.side-controls { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+.side-btn { width: 44px; height: 44px; border-radius: 50%; background: #fff; border: 2px solid #ddd; font-size: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.2s; position: relative; z-index: 10; }
+.side-btn:active { transform: scale(0.9); }
+.side-btn:hover { border-color: #ff80ab; transform: scale(1.1); }
+.main-menu-btn { background: #5d4037; color: #fff; border-color: #5d4037; }
+
+/* 숨겨진 폴더 */
+.dock-folder { display: none; flex-direction: column; gap: 8px; padding-top: 5px; }
+.dock-folder.show { display: flex; animation: slide-down 0.2s forwards; }
+@keyframes slide-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 팝업 위치 강제 고정 */
+.save-menu, .settings-modal { left: 55px !important; top: 0 !important; }
+        .side-btn:active { transform: scale(0.9); }
+        
+        /* 저장/로드 팝업 메뉴 */
+        .save-menu {
+            display: none;
+            position: absolute; left: 50px; top: 0;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px; padding: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 2px solid #ffcc80;
+            flex-direction: column; gap: 5px;
+            width: 120px;
+            backdrop-filter: blur(5px);
+        }
+        .save-opt {
+            padding: 8px; border: 1px solid #ddd; border-radius: 10px;
+            background: #fff; font-size: 12px; cursor: pointer; text-align: center; color: #555; font-weight: bold;
+        }
+        .save-opt:hover { background: #fff3e0; color: #f57c00; }
 
         .timeline-label {
             font-size: 12px;
@@ -469,16 +637,16 @@
 
         .log-container {
             flex: 1;
-            padding: 10px;
+            padding: 5px 10px; /* 패딩 축소 */
             overflow-y: auto;
             font-size: 12px;
             border-bottom: 2px solid #f0f0f0;
             background: #fff;
-            line-height: 1.5;
+            line-height: 1.4;
             display: flex;
             flex-direction: column;
-            min-height: 50px;
-            max-height: 120px;
+            min-height: 30px;  /* 최소 높이 축소 */
+            max-height: 60px;  /* 최대 높이 대폭 축소 (120 -> 60) */
         }
 
         .log-entry {
@@ -501,11 +669,11 @@
         /* [UI 개선] 높이 유동적 변경 (잘림 방지) */
         .btn-group {
             display: flex;
-            min-height: 80px;
+            min-height: 60px; /* 80px -> 60px로 축소 */
             height: auto;
             flex-shrink: 0;
-            padding: 5px;
-            gap: 5px;
+            padding: 4px;     /* 패딩 약간 축소 */
+            gap: 4px;
             background: #fff5f8;
         }
 
@@ -549,15 +717,16 @@
 
         .passive-panel {
             background: #e0f2f1;
-            padding: 5px 10px;
+            padding: 2px 8px;  /* 패딩 축소 */
             font-size: 11px;
             color: #00695c;
             display: flex;
             align-items: center;
-            border-radius: 10px;
-            margin: 4px 10px;
+            border-radius: 8px;
+            margin: 2px 5px;   /* 여백 대폭 축소 */
             border: 1px solid #b2dfdb;
             flex-shrink: 0;
+            height: 24px;      /* 높이 강제 고정 */
         }
 
         .passive-icon { margin-right: 5px; font-size: 14px; }
@@ -602,18 +771,17 @@
 
         .tag-container {
             position: absolute;
-            top: 2px;
-            left: 2px;
-            right: 2px;
+            top: auto;          /* 상단 고정 해제 */
+            bottom: 55px;       /* 하단 이름표 바로 위로 위치 변경 */
+            left: 5px;
+            right: 5px;
             display: flex;
             justify-content: center;
-            gap: 2px;
-            flex-wrap: wrap;
+            gap: 3px;
+            flex-wrap: wrap-reverse; /* 태그가 쌓일 때 위쪽으로 쌓이도록 설정 */
             z-index: 10;
             pointer-events: none;
-            max-height: 36px;
-            overflow: hidden;
-            align-content: flex-start;
+            /* max-height 제한을 풀어 여러 개가 걸려도 보이게 함 */
         }
 
         .tag {
@@ -645,6 +813,10 @@
         .tag.blind { background: #bdbdbd; color: #5d4037; }
         .tag.immunity { background: #fff; color: #5d4037; border: 1px solid #5d4037; }
         .tag.healdown { background: #8d6e63; color: #fff; }
+        /* [신규] 치유 감소 수치별 색상 구분 */
+        .tag.heal-20 { background: #ab47bc; color: #fff; } /* 보라색 (독) */
+        .tag.heal-50 { background: #fb8c00; color: #fff; } /* 주황색 (모래) */
+        .tag.heal-critical { background: #c62828; color: #fff; font-weight:bold; animation: jelly-bounce 2s infinite; } /* 고위험 */
         .tag.atkup { background: #ef5350; color: #fff; }
         .tag.taunt {
             background: #212121;
@@ -838,12 +1010,15 @@
         }
 /* [신규] 데미지 미리보기 & 감정표현 */
         .hp-preview {
-            position: absolute; top: 0; right: 0; bottom: 0;
-            background: rgba(255, 23, 68, 0.6); /* 붉은색 빗금 */
-            z-index: 2; pointer-events: none;
-            transition: width 0.2s;
-            box-shadow: -2px 0 0 rgba(255,255,255,0.5);
+            position: absolute;
+            top: 0; bottom: 0;
+            background: rgba(255, 23, 68, 0.8); /* 붉은색 데미지 경고 */
+            z-index: 5; pointer-events: none;
+            transition: all 0.1s;
+            box-shadow: 0 0 5px rgba(255,255,255,0.8);
+            animation: blink-preview 0.5s infinite alternate;
         }
+        @keyframes blink-preview { from { opacity: 0.4; } to { opacity: 0.9; } }
         .emote-bubble {
             position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
             background: #fff; border: 3px solid #333; border-radius: 20px;
@@ -933,51 +1108,187 @@
             transition: 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         .toggle-btn.on::after { left: 22px; }
+        /* =========================================
+   [새로운 턴 활성화 디자인 적용]
+   기존의 튀어오름 및 두꺼운 테두리를 제거하고,
+   레이아웃에 영향을 주지 않는 빛(Glow) 효과로 대체합니다.
+========================================= */
+
+/* 1. 활성화된 카드 스타일 재정의 */
+.unit.active-turn {
+    /* [재수정] 이웃 카드를 가리지 않도록 확대/회전 제거 */
+    /* 위로만 살짝(-5px) 떠오르게 하여 "나 여기 있어" 신호만 줍니다 */
+    transform: translateY(-5px) !important; 
+    
+    /* 대신 테두리를 아주 진하고 두껍게(3px -> 4px) 변경하여 시인성 확보 */
+    border: 4px solid #ff4081 !important; 
+    z-index: 10 !important; /* 테두리가 잘 보이도록 레이어 순서 보정 */
+
+    /* 내부가 환하게 비치는 하이라이트 효과 추가 */
+    box-shadow: 0 10px 20px rgba(255, 64, 129, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.8) !important;
+    
+    transition: transform 0.2s ease-out, border 0.2s, box-shadow 0.2s;
+    /* 심장 박동처럼 깜빡이는 애니메이션 유지 */
+    animation: active-glow-pulse 1.5s infinite ease-in-out;
+}
+
+/* 2. 빛이 숨쉬듯 일렁이는 애니메이션 정의 */
+@keyframes active-glow-pulse {
+    0%, 100% {
+        /* 빛이 은은할 때 */
+        box-shadow: 
+            0 0 10px 2px var(--accent),          /* 외부 후광 */
+            inset 0 0 5px rgba(255, 255, 255, 0.3); /* 내부 하이라이트 */
+    }
+    50% {
+        /* 빛이 가장 강할 때 */
+        box-shadow: 
+            0 0 20px 5px var(--accent),          /* 더 넓고 진한 외부 후광 */
+            inset 0 0 15px rgba(255, 255, 255, 0.5); /* 더 강한 내부 하이라이트 */
+    }
+}
+
+/* 3. 플레이어 카드 추가 보정 (혹시 모를 미세 겹침 방지) */
+/* 플레이어 카드는 컨트롤 패널과 가까우므로 하단 마진을 살짝 확보 */
+#player-row .unit.active-turn {
+    margin-bottom: 4px; 
+    transition: margin-bottom 0.3s ease;
+}
+/* 비활성 상태일 때 자연스럽게 복귀 */
+#player-row .unit:not(.active-turn) {
+     margin-bottom: 0;
+     transition: margin-bottom 0.3s ease;
+}
+/* 하단 메뉴용 위로 올라가는 애니메이션 */
+@keyframes slide-up-menu { 
+    from { opacity: 0; transform: translateY(20px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+.dock-folder.show { 
+    animation: slide-up-menu 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important; 
+}
+/* [중요] 메뉴가 패널 밖으로 튀어나와도 잘리지 않게 함 */
+.control-panel {
+    overflow: visible !important;
+}
+/* [긴급 수정] 하단 패널 및 메뉴 계층 최상위로 격상 */
+.control-panel {
+    z-index: 5000 !important; /* 유닛(100), 이펙트(999)보다 무조건 높게 */
+    overflow: visible !important; /* 메뉴가 패널 밖으로 튀어나가도 보이게 */
+}
+
+/* 메뉴 안의 팝업들(저장/설정) 위치 및 클릭 보정 */
+.dock-folder {
+    z-index: 6000 !important; /* 패널보다 더 높게 */
+    pointer-events: auto !important; /* 클릭 강제 허용 */
+}
+
+/* 설정/저장 팝업창 스타일 보정 (메뉴 옆으로 예쁘게 뜨게) */
+.settings-modal, .save-menu {
+    position: absolute !important;
+    bottom: 0 !important;
+    right: 45px !important; /* 아이콘 바로 왼쪽으로 배치 */
+    top: auto !important;
+    left: auto !important;
+    z-index: 7000 !important; /* 메뉴보다도 높게 */
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid var(--text-main);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    width: 180px; /* 너비 확보 */
+}
+/* [신규] 실드 게이지 및 체력바 스타일 보정 */
+.status-bar {
+    position: relative; /* 실드 겹치기를 위한 기준점 */
+    background: #444; /* 빈 공간 배경색 */
+    overflow: hidden; /* 둥근 모서리 유지 */
+}
+
+.hp-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    z-index: 1; /* 체력은 1층 */
+    transition: width 0.3s ease;
+}
+
+.shield-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background-color: var(--shield); /* 보라색 (#ce93d8) */
+    opacity: 0.75; /* 살짝 투명하게 해서 체력과 겹쳐 보이게 */
+    z-index: 2; /* 실드는 체력 위에 2층으로 표시 */
+    pointer-events: none;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 5px rgba(206, 147, 216, 0.5); /* 빛나는 효과 */
+}
+/* =========================================
+   [업그레이드] 스킬 이펙트 (VFX) 시스템 V2
+   ========================================= */
+.vfx-layer {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10000; /* 유닛보다 무조건 위 (10000) */
+    font-size: 80px; /* 크기 2배 확대 (40px -> 80px) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); /* 그림자 추가로 가시성 확보 */
+}
+
+/* 1. 타격/폭발: 화면을 뚫고 나올 듯한 확대 */
+@keyframes vfx-boom {
+    0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; filter: brightness(2.0); } /* 밝게 빛남 */
+    100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
+}
+
+/* 2. 베기: 빠르고 강렬한 궤적 */
+@keyframes vfx-slash {
+    0% { transform: translate(-50%, -50%) scale(0.5) rotate(-45deg); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1.5) rotate(45deg); opacity: 0; }
+}
+
+/* 3. 회복: 천천히 위로 올라가며 반짝임 */
+@keyframes vfx-heal {
+    0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+    50% { transform: translate(-50%, -50px) scale(1.2); opacity: 1; text-shadow: 0 0 20px #4caf50; }
+    100% { transform: translate(-50%, -100px) scale(1.5); opacity: 0; }
+}
+
+/* 4. 마법: 회전하며 커짐 */
+@keyframes vfx-magic {
+    0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(3) rotate(720deg); opacity: 0; }
+}
+/* [2P 전용 스타일: 파란색/보라색 계열로 변환] */
+        .unit.team-1 .unit-img, 
+        .hero-card.p2-selected .unit-img-bg {
+            filter: hue-rotate(180deg) brightness(1.1) !important;
+        }
+        .unit.team-1 .hp-bar-fill {
+            background: #5c6bc0 !important;
+        }
+        /* 2P 선택 카드 강조 */
+        .hero-card.p2-selected {
+            border: 3px solid #5c6bc0 !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #5c6bc0;
+        }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-
+<div id="tooltip-view"></div>
 <div id="flash-overlay"></div>
-<div id="turn-banner"></div>
 <!-- [컷신] 오버레이 -->
 <div id="cut-in-overlay">
     <div class="cut-in-img" id="cut-in-emoji">🦁</div>
     <div class="cut-in-text" id="cut-in-msg">FINISH!</div>
 </div>
 <!-- [툴팁] 뷰 -->
-<div id="tooltip-view"></div>
-
-<div class="settings-btn" onclick="UI.toggleSettings()">🎵</div>
-<div id="audio-settings" class="settings-modal">
-    <div class="set-row">
-        <span>볼륨</span>
-        <input type="range" class="vol-slider" min="0" max="100" value="50" oninput="AudioSys.setMasterVolume(this.value)">
-    </div>
-    <hr style="border:0; border-top:1px dashed #eee; width:100%; margin:5px 0;">
-    <div class="set-row">
-        <span>배경음악 (BGM)</span>
-        <div class="toggle-btn on" id="tog-bgm" onclick="AudioSys.toggleChannel('bgm')"></div>
-    </div>
-    <div style="font-size:11px; color:#888; margin-top:5px;">🎹 New Piano Collection</div>
-    <div class="bgm-select">
-    <div class="bgm-opt" onclick="UI.selectBGM('Battle_Piano', this)">⚔️ 전투</div>
-    <div class="bgm-opt" onclick="UI.selectBGM('Thinking', this)">🤔 전략</div>
-    <div class="bgm-opt" onclick="UI.selectBGM('Aftermath', this)">🌅 평화</div>
-    </div>
-
-    <div style="font-size:11px; color:#888; margin-top:5px;">🎼 Canon Variations (Original)</div>
-    <div class="bgm-select">
-        <div class="bgm-opt active" onclick="UI.selectBGM('Canon_Piano', this)">🎹 피아노</div>
-        <div class="bgm-opt" onclick="UI.selectBGM('Canon_Harp', this)">🎻 하프</div>
-        <div class="bgm-opt" onclick="UI.selectBGM('Canon_Mix', this)">✨ 믹스</div>
-    </div>
-    <hr style="border:0; border-top:1px dashed #eee; width:100%; margin:5px 0;">
-        <div class="set-row">
-        <span>효과음 (SFX)</span>
-        <div class="toggle-btn on" id="tog-sfx" onclick="AudioSys.toggleChannel('sfx')"></div>
-    </div>
-</div>
 
 <div id="app">
     <div id="modal-overlay">
@@ -990,7 +1301,7 @@
     <div id="selection-screen" class="screen">
         <div style="text-align:center; margin-bottom:15px;">
             <h1 style="margin:0 0 5px 0; color:var(--accent); font-size: 32px; text-shadow: 3px 3px 0 #fff;">🐾 Elemental Tactics</h1>
-            <p style="margin:0 0 5px 0; font-size:15px; color:#8d6e63;">v12.1 Fixed (AI Crash & Save/Load)</p>
+            <p style="margin:0 0 5px 0; font-size:15px; color:#8d6e63;">v17.1 Fixed (ILLUST)</p>
             <p style="margin:0 0 15px 0; font-size:12px; color:#e57373; font-weight:bold;">※ 동일 영웅은 중복해서 선택할 수 없습니다.</p>
             <div style="display:flex; justify-content:center; gap:10px;">
                 <button class="btn-restart" onclick="UI.showGuide()">📖 가이드북</button>
@@ -1038,19 +1349,39 @@
     <div id="battle-screen" class="screen">
         <div class="field-row" id="enemy-row"></div>
         <div class="control-panel">
-            <div class="cp-header">
-                <span id="turn-indicator" style="font-weight:bold; color:var(--accent);">Ready... 🐱</span>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-restart" onclick="Game.saveGame()">💾</button>
-                    <button class="btn-restart" onclick="Game.loadGame()">📂</button>
-                    <button class="btn-restart" onclick="UI.showGuide()">📖</button>
-                    <button class="btn-restart" onclick="Game.reset()">🏠</button>
+            <div class="cp-header" style="position:relative; padding-right:50px;">
+                <span id="turn-indicator" style="font-weight:bold; color:var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width: 100%;">Ready... 🐱</span>
+                
+                <div style="position:absolute; right:5px; top:50%; transform:translateY(-50%); z-index: 100;">
+                    <div class="side-btn main-menu-btn" onclick="UI.toggleDock()" style="width:32px; height:32px; font-size:16px; margin:0;" title="메뉴">⚙️</div>
+                    
+                    <div id="dock-folder" class="dock-folder" style="position:absolute; bottom:110%; right:0; flex-direction:column-reverse; background:transparent; padding-bottom:5px;">
+                        <div class="side-btn" onclick="Game.reset()" title="홈" style="width:32px; height:32px; font-size:16px;">🏠</div>
+                        
+                        <div style="position:relative;">
+                            <div class="side-btn" onclick="UI.toggleSettings()" title="소리" style="width:32px; height:32px; font-size:16px;">🎵</div>
+                            <div id="audio-settings" class="settings-modal" style="bottom:0; right:40px; top:auto; left:auto;">
+                                <div class="set-row"><span>볼륨</span><input type="range" class="vol-slider" min="0" max="100" value="50" oninput="AudioSys.setMasterVolume(this.value)"></div>
+                                <hr style="border:0; border-top:1px dashed #eee; width:100%; margin:5px 0;">
+                                <div class="set-row"><span>BGM</span><div class="toggle-btn on" id="tog-bgm" onclick="AudioSys.toggleChannel('bgm')"></div></div>
+                                <div class="bgm-select"><div class="bgm-opt active" onclick="UI.selectBGM('Canon_Piano', this)">🎹피아노</div><div class="bgm-opt" onclick="UI.selectBGM('Battle_Piano', this)">⚔️전투</div></div>
+                                <hr style="border:0; border-top:1px dashed #eee; width:100%; margin:5px 0;">
+                                <div class="set-row"><span>SFX</span><div class="toggle-btn on" id="tog-sfx" onclick="AudioSys.toggleChannel('sfx')"></div></div>
+                            </div>
+                        </div>
+
+                        <div style="position:relative;">
+                            <div class="side-btn" onclick="UI.toggleSaveMenu()" title="저장" style="width:32px; height:32px; font-size:16px;">💾</div>
+                            <div id="save-menu-popup" class="save-menu" style="bottom:0; right:40px; top:auto; left:auto;">
+                                <div class="save-opt" onclick="Game.saveGame(); UI.toggleSaveMenu()">💾저장</div>
+                                <div class="save-opt" onclick="Game.loadGame(); UI.toggleSaveMenu()">📂로드</div>
+                            </div>
+                        </div>
+
+                        <div class="side-btn" onclick="UI.showGuide()" title="가이드" style="width:32px; height:32px; font-size:16px;">📖</div>
+                        <div class="side-btn" onclick="UI.showCollection()" title="도감" style="width:32px; height:32px; font-size:16px;">💎</div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="timeline-container" id="timeline">
-                <span class="timeline-label">NEXT:</span>
-                <div id="tl-track" style="display:flex; gap:8px;"></div>
             </div>
 
             <div class="log-container" id="logs"></div>
@@ -1295,28 +1626,75 @@ function startOnlineGame(code) {
 // ================= [데이터 정의] =================
 const ATTR = { 'Fire':{i:'🔥', n:'불', c:'#e74c3c'}, 'Water':{i:'💧', n:'물', c:'#3498db'}, 'Tree':{i:'🌿', n:'나무', c:'#2ecc71'}, 'Metal':{i:'⚔️', n:'쇠', c:'#95a5a6'}, 'Earth':{i:'⛰️', n:'흙', c:'#e67e22'}, 'Light':{i:'☀️', n:'빛', c:'#f1c40f'}, 'Dark':{i:'🌙', n:'어둠', c:'#9b59b6'}, 'Normal':{i:'☀️🌙', n:'노말', c:'#ecf0f1'} };
 const NAME_MAP = { 'Water-Light':'증기', 'Fire-Light':'푸른불', 'Tree-Light':'숲', 'Metal-Light':'독가스', 'Earth-Light':'모래', 'Water-Dark':'얼음', 'Fire-Dark':'검은불', 'Tree-Dark':'가시', 'Metal-Dark':'전기', 'Earth-Dark':'바위', 'Light-Light':'빛(강화)', 'Dark-Dark':'어둠(강화)', 'Normal':'노말' };
+const IMAGE_DB = {
+    // [기초 속성]
+    'Fire': './fire.png',
+    'Water': './water.png',
+    'Tree': './tree.png',
+    'Metal': './metal.png',
+    'Earth': './earth.png',
+    'Light': './light.png',
+    'Dark': './dark.png',
+    'Normal': './normal.png',
 
+    // [빛 조합]
+    'Fire-Light': './fire_light.png',    // (완료) 푸른불
+    'Water-Light': './water_light.png', // 증기
+    'Tree-Light': './tree_light.png',   // 숲
+    'Metal-Light': './metal_light.png', // 독가스
+    'Earth-Light': './earth_light.png', // 모래
+
+    // [어둠 조합]
+    'Fire-Dark': './fire_dark.png',     // 검은불
+    'Water-Dark': './water_dark.png',   // 얼음
+    'Tree-Dark': './tree_dark.png',     // 가시
+    'Metal-Dark': './metal_dark.png',   // 전기
+    'Earth-Dark': './earth_dark.png',   // 바위
+
+    // [강화 속성]
+    'Light-Light': './light_enhanced.png', // 천사/성기사
+    'Dark-Dark': './dark_enhanced.png',    // 악마/심연
+
+    // [기본값] (이미지가 없거나 이름이 틀렸을 때 나오는 이미지)
+    'Default': 'https://via.placeholder.com/150/cccccc/ffffff?text=No+Image'
+};
 const SKILL_DB = {
-    'Metal': { s1:'강철베기', s1d:'1.3배+30%쉴드', s2:'결투 신청', s2d:'도발(2턴)/쉴드+15/데미지X', type:'CC', target:'ENEMY', role:'tank', icon:'🛡️', desc:'방어형 탱커<br>받는 피해 MaxHP 30% 제한', passive:'🛡️ 강철 맷집: 쉴드 보유 시, 한 번에 받는 피해가 최대 체력의 30%를 넘지 않습니다.' },
-    'Tree': { s1:'광합성', s1d:'공+18/쉴드+30(영구중첩)', s2:'치유의 잎', s2d:'아군1명 HP+150/정화', type:'SELF_BUFF', target:'ALLY', role:'tank', icon:'🌳', desc:'성장형 탱커<br>자가성장 + 힐', passive:'🌿 성장: 광합성 사용 시 영구적으로 공격력과 쉴드가 증가합니다.' },
-    'Fire-Light': { s1:'흡혈부여', s1d:'아군전체 흡혈(3턴)', s2:'폭주', s2d:'자신공+20(영구)/전체공+10', type:'TARGET_BUFF', target:'ALLY', role:'tank', icon:'🔷', desc:'공격형 탱커<br>흡혈 + 폭주', passive:'🩸 흡혈: 매 턴 공격 시 피해량의 25%를 회복합니다. (최대 50)' },
+    'Metal': { s1:'강철베기', s1d:'1.1배+40%쉴드', s2:'결투 신청', s2d:'도발(2턴)/쉴드+15', type:'CC', target:'ENEMY', role:'tank', icon:'🛡️', desc:'방어형 탱커<br>받는 피해 MaxHP 20% 제한', passive:'🛡️ 강철 맷집: 쉴드 보유 시, 한 번에 받는 피해가 최대 체력의 20%를 넘지 않습니다.' },
+    'Tree': { s1:'뿌리묶기', s1d:'3턴간 아군피해 40% 대신받음', s2:'치유의 잎', s2d:'HP+100/정화(CC해제시 뎀감↑)', type:'SELF_BUFF', target:'SELF', role:'tank', icon:'🌳', desc:'수호형 탱커<br>피해 분산 + 뎀감 패시브', passive:'🌳 거목: 받는 피해가 15% 감소합니다. S2로 행동불가를 해제하면 뎀감율이 5%씩 증가합니다 (최대 25%).'},
+    'Fire-Light': { s1:'흡혈부여', s1d:'아군전체 흡혈(3턴)', s2:'폭주', s2d:'자신공+20(영구)/전체공+10', type:'TARGET_BUFF', target:'ALLY', role:'tank', icon:'🔷', desc:'공격형 탱커<br>흡혈 + 폭주', passive:'🩸 흡혈: 매 턴 공격 시 피해량의 30%를 회복합니다. (최대 50)' },
     'Water-Light': { s1:'스팀젯', s1d:'0.9배+실명(30%)', s2:'안개', s2d:'잃은체력15%힐+회피', type:'TARGET_BUFF', target:'ALLY', role:'tank', icon:'☁️', desc:'서폿형 탱커<br>회피 + 어그로', passive:'☁️ 기화: 체력 20% 이하 시 1회 자동 회복 및 회피 상태가 됩니다.' },
-    'Fire': { s1:'화염방사', s1d:'1.6배 +화상(60%)', s2:'메테오', s2d:'광역 0.8배+화상(30%)', type:'AOE', target:'ALL_ENEMY', role:'nuker', icon:'🔥', desc:'메인 딜러<br>초반 강력 (유통기한)', passive:'🔥 불의 기세: 1~2턴 공+20, 3~6턴 공+10, 7턴 이후 0' },
+    'Fire': { s1:'화염방사', s1d:'1.5배 +화상(60%)', s2:'메테오', s2d:'광역 0.8배+화상(30%)', type:'AOE', target:'ALL_ENEMY', role:'nuker', icon:'🔥', desc:'메인 딜러<br>초반 강력 / 유리대포', passive:'🔥 불의 기세: 1~2R 공+15, 3~6R 공+10, 7R~ 공+5' },
     'Normal': { s1:'균형타', s1d:'1.5배/내HP-30/쉴드60', s2:'주사위', s2d:'0.8~2.3배 랜덤/노코스트', type:'RANDOM', target:'ENEMY', role:'nuker', icon:'⚖️', desc:'메인 딜러<br>랜덤 한방 (약점:단일기초5속성) + 서브탱킹', passive:'🎲 면역: 행동 제어기(기절,빙결,침묵,세뇌)에 걸리지 않습니다.'},
-    'Fire-Dark': { s1:'흑염', s1d:'1.0배+광역화상(100%)', s2:'소각', s2d:'1.0배+적 공격력만큼 추가타', type:'NUKE_PER', target:'ENEMY', role:'nuker', icon:'🐲', desc:'메인 딜러<br>역이용 카운터', passive:'🔥 소각: 적의 공격력이 높을수록 더 큰 피해를 입힙니다.' },
+    
+    // [수정] 자가화상 패시브 설명 삭제
+    'Fire-Dark': { s1:'흑염', s1d:'1.0배+광역화상(100%)', s2:'소각', s2d:'1.0배+적 공격력만큼 추가타', type:'NUKE_PER', target:'ENEMY', role:'nuker', icon:'🐲', desc:'메인 딜러<br>역이용 / 강력한 광역 도트', passive:'🔥 소각: 적의 공격력이 높을수록 더 큰 피해를 입힙니다.' },
+    
     'Metal-Dark': { s1:'전기충격', s1d:'1.5배+공격력10↑', s2:'방전', s2d:'광역 0.8배+기절(15%)', type:'AOE', target:'ALL_ENEMY', role:'nuker', icon:'⚡', desc:'메인 딜러<br>성장형 광역', passive:'⚡ 과부하: S1 사용 시 공격력이 10 증가합니다 (최대 3회).' },
-    'Earth-Dark': { s1:'낙석', s1d:'1.5배', s2:'산사태', s2d:'2.5배+자가기절(1턴 휴식)', type:'ATK', target:'ENEMY', role:'nuker', icon:'🗿', desc:'메인 딜러<br>강력한 한방', passive:'🗿 반동: 산사태 후 기절 상태에서는 받는 피해가 10 증가합니다.' },
-    'Earth': { s1:'암석투척', s1d:'1.3배+기절/침묵(30%)', s2:'지진', s2d:'광역 0.8배 (1:1강화)', type:'AOE', target:'ALL_ENEMY', role:'nuker', icon:'🏜️', desc:'CC형 딜러<br>기절 / 침묵', passive:null },
-    'Water-Dark': { s1:'고드름', s1d:'1.5배', s2:'절대영도', s2d:'1.0배+빙결(35%)', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'❄️', desc:'CC형 딜러<br>빙결', passive:null },
-    'Metal-Light': { s1:'가스탄', s1d:'0.3배/CC걸린적 1.5배', s2:'맹독살포', s2d:'전체 중독(3턴)', type:'DEBUFF', target:'ALL_ENEMY', role:'nuker', icon:'☣️', desc:'특수 딜러<br>버프 제거 + 조건부폭딜', passive:null },
-    'Earth-Light': { s1:'모래폭풍', s1d:'1.3배(관통)+쉴드타격0.6배', s2:'모래지옥', s2d:'속박+치유감소(60%)', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'🦂', desc:'특수 딜러<br>쉴드 파괴자', passive:null },
-    'Tree-Dark': { s1:'가시찌르기', s1d:'1.5배+반사강화', s2:'영혼결속', s2d:'아군결속/저항↑', type:'TARGET_BUFF', target:'ALLY', role:'nuker', icon:'🥀', desc:'특수 딜러<br>복수 + 결속', passive:'🥀 복수: 결속된 아군 사망 시 공격력+20, S1계수+0.3 영구 증가.' },
-    'Water': { s1:'물대포', s1d:'1.5배', s2:'치유의 비', s2d:'전체120+(20%확률50)', type:'HEAL', target:'ALL_ALLY', role:'supp', icon:'🐳', desc:'메인 힐러<br>광역 회복', passive:null },
-    'Tree-Light': { s1:'숲의분노', s1d:'1.3배+아군랜덤힐20', s2:'축복', s2d:'아군 정화/HP+70', type:'BUFF', target:'ALL_ALLY', role:'supp', icon:'🧚', desc:'메인 힐러<br>공격 + 회복', passive:null },
-    'Light': { s1:'홀리볼', s1d:'1.5배', s2:'수호의 빛', s2d:'전체 쉴드+70/공+15', type:'BUFF', target:'ALL_ALLY', role:'supp', icon:'✨', desc:'메인 버퍼<br>광역 쉴드', passive:null },
+    'Earth-Dark': { s1:'낙석', s1d:'1.5배', s2:'산사태', s2d:'2.35배+자가기절(1턴)', type:'ATK', target:'ENEMY', role:'nuker', icon:'🗿', desc:'메인 딜러<br>강력한 한방', passive:'🗿 반동: 산사태 사용 후 1턴간 [반동] 상태가 됩니다. 반동 상태에서는 받는 피해가 15 증가하며, 이는 정화되지 않습니다.' },
+    'Earth': { s1:'암석투척', s1d:'1.4배+버프파괴+CC', s2:'지진', s2d:'광역 0.8배 (1:1강화)', type:'AOE', target:'ALL_ENEMY', role:'nuker', icon:'🏜️', desc:'CC형 딜러<br>버프 파괴 / 기절', passive:null },
+    'Water-Dark': { s1:'고드름', s1d:'1.5배+데미지20%쉴드', s2:'절대영도', s2d:'1.0배+빙결(35%)', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'❄️', desc:'CC형 딜러<br>빙결 + 자가쉴드', passive:'❄️ 얼음 갑옷: S1 사용 시 입힌 데미지의 20%만큼 쉴드를 획득합니다.' },
+    'Metal-Light': { s1:'가스탄', s1d:'3뎀+피격대상1.0배(CC1.3배)', s2:'맹독살포', s2d:'전체독/치유감소20%', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'☣️', desc:'특수 딜러<br>나무(Tree) 카운터 / 힐밴', passive:null },
+    
+    // [수정] 속박 -> 모래지옥(지속피해) 명시
+    'Earth-Light': { s1:'모래폭풍', s1d:'1.3배(관통)+쉴드타격0.6배', s2:'모래지옥', s2d:'지속피해(60)+치유감소(50%)', type:'DEBUFF', target:'ENEMY', role:'nuker', icon:'🦂', desc:'특수 딜러<br>쉴드 파괴자 / 힐러 억제', passive:null },
+    
+    'Tree-Dark': { s1:'가시찌르기', s1d:'1.5배+복수(계수증가)', s2:'영혼결속', s2d:'아군결속/저항↑', type:'TARGET_BUFF', target:'ALLY', role:'nuker', icon:'🥀', desc:'특수 딜러<br>복수 + 결속', passive:'🥀 복수: 결속된 아군 사망 시 공격력+20, S1계수+0.3 영구 증가.' },
+    
+    // [수정] 1.5배->1.4배, 힐량 표기 수정, 패시브 추가
+    'Water': { s1:'물대포', s1d:'1.4배', s2:'치유의 비', s2d:'전체 110 회복', type:'HEAL', target:'ALL_ALLY', role:'supp', icon:'🐳', desc:'메인 힐러<br>광역 회복', passive:'💧 생명수: 스킬 사용 시 20% 확률로 체력이 가장 낮은 아군을 50 추가 치유합니다.' },
+    
+    'Tree-Light': { s1:'숲의분노', s1d:'1.3배+빈사아군 쉴드40', s2:'축복', s2d:'아군 정화/HP+70', type:'BUFF', target:'ALL_ALLY', role:'supp', icon:'🧚', desc:'메인 힐러<br>공격 + 보호막', passive:null },
+    
+    // [수정] 중첩 시 효과 강화 명시
+    'Light': { s1:'홀리볼', s1d:'1.5배', s2:'수호의 빛', s2d:'전체 쉴드+70/공+15(중첩↑)', type:'BUFF', target:'ALL_ALLY', role:'supp', icon:'✨', desc:'메인 버퍼<br>광역 쉴드', passive:null },
+    
     'Light-Light': { s1:'신의심판', s1d:'1.5배', s2:'성역', s2d:'전체 쉴드+50/정화', type:'BUFF', target:'ALL_ALLY', role:'supp', icon:'👼', desc:'메인 버퍼<br>정화 + 쉴드', passive:null },
-    'Dark': { s1:'다크볼', s1d:'1.5배+업보(반사50%)', s2:'공포', s2d:'광역 0.3배/공35%↓/쉴드30%파괴', type:'AOE', target:'ALL_ENEMY', role:'supp', icon:'👻', desc:'광역 디버퍼<br>공포 + 쉴드파괴', passive:'👁️ 업보: 다크볼 피격자가 상태이상을 걸면 50% 확률로 반사.' },
-    'Dark-Dark': { s1:'심연일격', s1d:'0.8배+침묵(1턴)', s2:'정신지배', s2d:'HP15%소모/세뇌(30~55%)', type:'DEBUFF', target:'ENEMY', role:'supp', icon:'🧠', desc:'심연의 지배자<br>적 제어권 탈취', passive:'🌑 심연의 힘: 세뇌 성공률은 기본 30%이며, 대상의 체력이 낮을수록 최대 55%까지 증가합니다. 성공 시 다음 턴 적을 1회 조종합니다.' }
+    
+    // [수정] 공깎 수치 조건 명시
+    'Dark': { s1:'다크볼', s1d:'1.5배+업보(피해30%/CC반사50%)', s2:'공포', s2d:'광역 0.4배/공20~35%↓', type:'AOE', target:'ALL_ENEMY', role:'supp', icon:'👻', desc:'광역 디버퍼<br>공포 + 쉴드파괴', passive:'👁️ 업보: 다크볼 피격자가 상태이상을 걸면 50% 확률로 반사.' },
+    
+    // [수정] 코스트 20% -> 12% 수정
+    'Dark-Dark': { s1:'심연일격', s1d:'0.8배+침묵(1턴)', s2:'정신지배', s2d:'HP12%소모/세뇌(30~55%)', type:'DEBUFF', target:'ENEMY', role:'supp', icon:'🧠', desc:'심연의 지배자<br>적 제어권 탈취', passive:'🌑 심연의 힘: 세뇌 성공률은 기본 30%이며, 대상의 체력이 낮을수록 최대 55%까지 증가합니다. 성공 시 다음 턴 적을 1회 조종합니다.' }
 };
 
 // [신규] Emotion Alias Database (English)
@@ -1358,19 +1736,59 @@ const TitleManager = {
 };
 
 const ChallengeDB = [
-    { name: "부동의 철옹성", desc: "쇠(Metal)가 막고 물(Water)이 채우며 불(Fire)이 때립니다.", team: ['Metal', 'Water', 'Fire'] },
-    { name: "무한 통제", desc: "빙결, 기절, 기절... 숨 쉴 틈을 주지 않습니다.", team: ['Water-Dark', 'Earth', 'Metal-Dark'] },
-    { name: "흡혈 귀족단", desc: "푸른불(Fire-Light)의 흡혈 부여와 나무(Tree)의 유지력.", team: ['Fire-Light', 'Tree', 'Fire'] },
-    { name: "심리전의 대가", desc: "반사(업보)와 복수(가시)로 딜레마를 유발합니다.", team: ['Dark', 'Tree-Dark', 'Normal'] },
-    { name: "쉴드 파괴자", desc: "쉴드를 관통하고 도트 데미지로 말려 죽입니다.", team: ['Earth-Light', 'Fire-Dark', 'Metal-Light'] },
-    { name: "세뇌 공작", desc: "내 유닛이 적이 되는 공포를 느껴보세요.", team: ['Dark-Dark', 'Metal', 'Water-Light'] },
-    { name: "초반 스노우볼", desc: "초반 깡패 불(Fire)과 강력한 한방 바위(Earth-Dark).", team: ['Fire', 'Earth-Dark', 'Metal'] },
-    // [순서 고정] 빛강화(쉴드/정화) -> 바위(2.5배 딜) 콤보
-    { name: "대지의 분노", desc: "정화 받은 바위(Earth-Dark)의 2.5배 핵펀치 연계.", team: ['Light-Light', 'Earth-Dark', 'Water'], fixedOrder: true },
-    { name: "운빨 존망겜", desc: "세뇌, 정화, 그리고 노말의 랜덤 주사위.", team: ['Dark-Dark', 'Light-Light', 'Normal'] },
-    // [최종 보스]
-    { name: "심연의 맹독", desc: "세뇌(Dark-Dark), 맹독/해제(Metal-Light), 힐(Water)의 최악 조합.", team: ['Dark-Dark', 'Metal-Light', 'Water'] }
+    /* === [초급] 기본 기믹 학습 === */
+    // 1. [입문] 탱커의 기본 (Metal 등장 1/4)
+    { name: "부동의 철옹성", desc: "쇠(Metal)가 앞을 막고 있습니다. 뒤에 숨은 딜러부터 노리세요!", team: ['Metal', 'Water', 'Fire'] },
+
+    // 2. [유지력] 흡혈과 힐
+    { name: "붉은 귀족", desc: "때려서 회복하는 흡혈귀들입니다. 한 명씩 확실하게 끊어야 합니다.", team: ['Fire-Light', 'Tree', 'Fire-Dark'] },
+
+    // 3. [심리전] 반사와 복수
+    { name: "딜레마의 숲", desc: "어둠(Dark)을 치면 반사되고, 나무(Tree-Dark)를 남기면 괴물이 됩니다.", team: ['Dark', 'Tree-Dark', 'Normal'] },
+
+    /* === [중급] 특수 공략 필요 === */
+    // 4. [회피] 물리 공격 무효화
+    { name: "신기루 작전", desc: "증기(Water-Light)는 위기 시 회피합니다. 독이나 한방 딜이 필요합니다.", team: ['Water-Light', 'Fire-Dark', 'Light'] },
+
+    // 5. [방어] 통곡의 좀비 벽 (Metal 등장 2/4)
+    { name: "불멸의 요새", desc: "죽지 않는 좀비 조합. 쇠(Metal)를 뚫을 강력한 화력이 필요합니다.", team: ['Metal', 'Tree', 'Water'] },
+
+    // 6. [저격] 힐러 말려 죽이기
+    { name: "모래 폭풍", desc: "치유 감소 효과로 당신의 힐러를 무력화시킵니다.", team: ['Earth-Light', 'Metal-Light', 'Earth'] },
+
+    /* === [상급] 메타 조합 (지옥) === */
+    // 7. [CC] 무한 메즈 지옥
+    { name: "절대 영도", desc: "얼리고, 기절시키고, 조종합니다. 당신에게 턴은 오지 않습니다.", team: ['Water-Dark', 'Metal-Dark', 'Dark-Dark'] },
+
+    // 8. [콤보] 리미트 해제 (Metal 등장 3/4) - ★ 수정됨!
+    // 설명: 바위가 때리고(기절) -> 천사가 풀어주고 -> 바위가 또 때림 (무한 반복)
+    { name: "대지의 진격", desc: "천사(Light-Light)가 바위(Earth-Dark)의 기절 패널티를 지워줍니다. 무한 핵펀치를 조심하세요.", team: ['Metal', 'Earth-Dark', 'Light-Light'] },
+
+    // 9. [변수] 최악의 서포팅
+    { name: "성역의 지배자", desc: "무한 쉴드와 정화, 그리고 세뇌. 가장 불쾌한 경험을 선사합니다.", team: ['Light-Light', 'Dark-Dark', 'Water-Light'] },
+
+    // 10. [보스] 엔드 컨텐츠 (Metal 등장 4/4)
+    { name: "The Apex (정점)", desc: "도발(Metal), 세뇌(Dark-Dark), 정화(Light-Light). 이 게임의 최강자들입니다.", team: ['Metal', 'Dark-Dark', 'Light-Light'] }
 ];
+
+// [Online] 시드 기반 난수 생성기 (동기화 필수)
+// Math.random() 대신 이걸 써야 두 플레이어의 결과가 똑같습니다.
+const RNG = {
+    seed: 1,
+    init: function(s) { 
+        this.seed = s % 2147483647; 
+        if (this.seed <= 0) this.seed += 2147483646; 
+    },
+    next: function() {
+        // Park-Miller 알고리즘 (가볍고 빠름)
+        this.seed = (this.seed * 16807) % 2147483647;
+        return (this.seed - 1) / 2147483646;
+    },
+    // 범위 랜덤 (min ~ max)
+    range: function(min, max) {
+        return Math.floor(this.next() * (max - min + 1)) + min;
+    }
+};
 
 const Common = {
     logAction: function(game, type, source, target, value, extra='') {
@@ -1384,85 +1802,82 @@ const Common = {
         } else { msg = `[${source.name.split(' ')[0]}] ${extra}`; }
         game.log(msg);
     },
+    // [공유 로직] 데미지 분산 처리기
+    distributeDamage: function(atk, def, dmg, game, isFire, ignoreShield) {
+        // 1. 방어자가 나무가 아니고, 아군 중에 [뿌리묶기(ROOT_GUARD)] 켜진 나무가 있는지 확인
+        const allies = def.team === 0 ? game.pTeam : game.eTeam;
+        const protector = allies.find(u => u.id !== def.id && !u.isDead && u.base === 'Tree' && u.hasStatus('ROOT_GUARD'));
+
+        // 2. 보호자가 없으면 기존대로 단일 피격
+        if (!protector) {
+            const act = def.takeDamage(dmg, isFire, ignoreShield, atk);
+            return { targetAct: act, split: false };
+        }
+
+        // 3. 데미지 분산 (나무 40% : 보호대상 60%)
+        // [Fix] 소수점 버림으로 인한 0 데미지 방지 (최소 1 보장 로직은 제외하되 계산 명확화)
+        const shareDmg = Math.floor(dmg * 0.4); 
+        const originalDmg = dmg - shareDmg;
+
+        // [이펙트] 연결선 표현
+        if (!game.isProcessing) {
+            UI.fireProjectile(protector, def, '🌿'); 
+        }
+
+        // 4. 데미지 적용
+        const act1 = def.takeDamage(originalDmg, isFire, ignoreShield, atk);
+        const act2 = protector.takeDamage(shareDmg, isFire, ignoreShield, atk);
+
+        // 5. 로그 출력
+        game.log(`<span class="log-sys" style="color:#66bb6a;">🛡️ [${protector.name}] 피해 분담! <b style="color:#ff7043;">(-${act2})</b></span>`);
+        UI.floatText(protector, `-${act2} (대신맞기)`, "ft-dmg");
+
+        return { targetAct: act1, split: true };
+    },
+
     basicAttack: function(atk, def, game) {
+        // 1. 소리는 공격 시도 시 바로 재생 (취향에 따라 실명일 때 끌 수도 있음)
         AudioSys.play('HIT');
+
+        // 2. 실명(BLIND) 체크 로직 (기존 코드 복구)
         const blindMod = atk.hasStatus('BLIND') ? 0 : 1;
         if(blindMod === 0) { 
-            // 실명 로그
-            Common.logAction(game, 'miss', atk, def, 0, "(실명)"); 
+            Common.logAction(game, 'miss', atk, def, 0, "(실명)");
             UI.floatText(atk, "BLINDED", "ft-miss"); 
-            return; 
+            return; // 실명이면 여기서 함수 종료 (데미지 X, 이펙트 X)
         }
 
-        const baseAtk = atk.getAtk();
+        // 3. 실명이 아닐 때만 공격 로그 및 이펙트 출력
+        game.log(`<b>[${atk.name}]</b> 공격! ⚔️`);
+        
+        // [이펙트] 공격 성공 시에만 샥! (실명일 땐 안 나옴)
+        UI.playVFX(def, 'slash'); 
 
-        // [Fix] 세뇌(Team Kill) 시에도 상성 계산 적용
-        // (원래 같은 팀이면 상성 계산 안 하지만, 세뇌 상태면 계산하도록 변경)
-        const applyAffinity = (def && def.team !== atk.team) || (game.isMindControlling);
-        const aff = applyAffinity ? game.calc(atk, def) : {v:1, t:''};
-
-        const dmg = Math.floor(baseAtk * 1.0 * aff.v * blindMod);
-        const act = def.takeDamage(dmg, false, false, atk);
-        game.recordStat(atk, 'dmg', Math.max(0, act));
-
-        if(act !== -1) {
-            Common.logAction(game, 'dmg', atk, def, act, aff.t);
-            const isCrit = (act >= 200) || (atk.isNormal && def.isNormal && act > baseAtk);
-            let type = isCrit ? "ft-crit" : "ft-dmg";
-            if (aff.v > 1.0) type = "ft-weak";
-            else if (aff.v < 1.0) type = "ft-resist";
-            
-            UI.floatText(def, act, type);
-            
-            if (isCrit || aff.v > 1.0) { 
-                AudioSys.play('CRITICAL'); 
-                UI.screenShake(); 
-                UI.hitStop(150); 
-            } else {
-                game.shake(def);
-            }
-
-            // [Fix] 흡혈 통계 처리 (기본 공격)
-            if ((atk.getKey() === 'Fire-Light') || atk.hasStatus('LIFESTEAL_BUFF')) {
-                const healAmt = Math.min(50, Math.floor(act * 0.25));
-                if(healAmt > 0) { 
-                    atk.heal(healAmt); 
-                    
-                    // 버프 제공자 찾기
-                    const buff = atk.status.find(s => s.type === 'LIFESTEAL_BUFF');
-                    if (buff && buff.sourceId !== -1 && buff.sourceId !== atk.id) {
-                        const allUnits = [...game.pTeam, ...game.eTeam];
-                        const provider = allUnits.find(u => u.id === buff.sourceId);
-                        if(provider) game.recordStat(provider, 'heal', healAmt);
-                    } else {
-                        Common.logAction(game, 'heal', atk, atk, healAmt, "(흡혈)"); 
-                    }
-                }
-            }
-        } else {
-            // [유지] 빗나감 로그 출력
-            Common.logAction(game, 'miss', atk, def, 0); 
-            UI.floatText(def, "MISS", "ft-miss");
-        }
+        // 4. 데미지 계산
+        const act = Common.applyDamage(atk, def, 1.0, game);
+        if (act !== -1) Common.logAction(game, 'dmg', atk, def, act, "");
     },
+
     applyDamage: function(atk, def, mult, game, ignoreShield=false, isFire=false) {
         const blindMod = atk.hasStatus('BLIND') ? 0 : 1;
         if(blindMod === 0) { 
-            UI.floatText(atk, "BLINDED", "ft-miss"); 
+            UI.floatText(atk, "BLINDED", "ft-miss");
             Common.logAction(game, 'miss', atk, def, 0, "(실명)"); 
             return -1; 
         }
         
         const baseAtk = atk.getAtk();
-
-        // [Fix] 세뇌(Team Kill) 시에도 상성 계산 적용
         const applyAffinity = (def.team !== atk.team) || (game.isMindControlling);
         const aff = applyAffinity ? game.calc(atk, def) : {v:1, t:''};
 
-        const dmg = Math.floor(baseAtk * mult * aff.v);
-        const act = def.takeDamage(dmg, isFire, ignoreShield, atk);
-        game.recordStat(atk, 'dmg', Math.max(0, act));
+        // [수정] 최종 데미지 산출
+        const rawDmg = Math.floor(baseAtk * mult * aff.v);
+        
+        // [수정] 분산 로직 호출
+        const res = Common.distributeDamage(atk, def, rawDmg, game, isFire, ignoreShield);
+        const act = res.targetAct;
 
+        game.recordStat(atk, 'dmg', Math.max(0, act));
         if(act !== -1) { 
             let type = act>=200 ? "ft-crit" : "ft-dmg";
             if (aff.v > 1.0) type = "ft-weak";
@@ -1470,24 +1885,21 @@ const Common = {
             UI.floatText(def, act, type); 
             game.shake(def); 
 
-            // [Fix] 흡혈 통계 처리 (스킬 공격)
             if ((atk.getKey() === 'Fire-Light') || atk.hasStatus('LIFESTEAL_BUFF')) {
-                const healAmt = Math.min(50, Math.floor(act * 0.25));
+                const healAmt = Math.min(50, Math.floor(act * 0.30));
                 if(healAmt > 0) { 
-                    atk.heal(healAmt); 
-                    
+                    atk.heal(healAmt);
                     const buff = atk.status.find(s => s.type === 'LIFESTEAL_BUFF');
                     if (buff && buff.sourceId !== -1 && buff.sourceId !== atk.id) {
                         const allUnits = [...game.pTeam, ...game.eTeam];
                         const provider = allUnits.find(u => u.id === buff.sourceId);
                         if(provider) game.recordStat(provider, 'heal', healAmt);
                     } else {
-                        Common.logAction(game, 'heal', atk, atk, healAmt, "(흡혈)"); 
+                        Common.logAction(game, 'heal', atk, atk, healAmt, "(흡혈)");
                     }
                 }
             }
         } else { 
-            // [유지] 빗나감 로그 출력
             Common.logAction(game, 'miss', atk, def, 0);
             UI.floatText(def, "MISS", "ft-miss"); 
         }
@@ -1518,19 +1930,25 @@ const SKILL_LOGIC = {
             if (sIdx === 0) Common.basicAttack(atk, def, game);
             else if (sIdx === 1) {
                 game.log(`<b>[${atk.name}]</b> 화염방사! 🔥`);
-                // [Balance] 화상 확률 60% 적용
-                const act = Common.applyDamage(atk, def, 1.6, game, false, true);
+                UI.playVFX(def, 'fire'); // [이펙트] 불꽃 발사
+                
+                // [Balance] 화상 확률 60% 유지, 계수 1.5로 너프
+                const act = Common.applyDamage(atk, def, 1.5, game, false, true);
                 if (act !== -1) {
                     Common.logAction(game, 'dmg', atk, def, act, "");
                     if (game.netRandom() < 0.60) def.addStatus('BURN', 2, 0, atk);
                 }
             } else {
-                // ... (S2 메테오는 기존 유지)
                 game.log(`<b>[${atk.name}]</b> 메테오! ☄️`);
+                // [이펙트] 적 전체 폭발
+                Common.forEachEnemy(atk, game, (e) => UI.playVFX(e, 'fire'));
+
                 Common.forEachEnemy(atk, game, (e) => {
                     const act = Common.applyDamage(atk, e, 0.8, game, false, true);
-                    if (act !== -1) Common.logAction(game, 'dmg', atk, e, act, "");
-                    if (act !== -1 && game.netRandom() < 0.30) e.addStatus('BURN', 2, 0, atk);
+                    if (act !== -1) {
+                         Common.logAction(game, 'dmg', atk, e, act, "");
+                         if (game.netRandom() < 0.30) e.addStatus('BURN', 2, 0, atk);
+                    }
                 });
             }
         }
@@ -1540,47 +1958,80 @@ const SKILL_LOGIC = {
             if (sIdx === 0) Common.basicAttack(atk, def, game);
             else if (sIdx === 1) {
                 game.log(`<b>[${atk.name}]</b> 물대포! 💧`);
-                const act = Common.applyDamage(atk, def, 1.5, game);
+                // [Balance] 1.5배 -> 1.4배 너프
+                const act = Common.applyDamage(atk, def, 1.4, game);
                 if (act !== -1) Common.logAction(game, 'dmg', atk, def, act, "");
             } else {
                 game.log(`<b>[${atk.name}]</b> 치유의 비 🌧️`);
                 AudioSys.play('HEAL');
                 Common.forEachAlly(atk, game, (a) => {
-                    let amt = 120;
-                    if (game.netRandom() < 0.2) {
-                        amt += 50;
-                        UI.floatText(a, "Lucky!", "ft-crit");
-                    }
-                    const h = a.heal(amt);
+                    // [Fix] 기본 힐량 110으로 상향
+                    const h = a.heal(110);
                     game.recordStat(atk, 'heal', h);
                     Common.logAction(game, 'heal', atk, a, h, "");
                 });
-                return false;
             }
+
+            // [New Passive] S1, S2 사용 시 20% 확률로 최저 체력 아군 치유
+            if (sIdx > 0 && game.netRandom() < 0.20) {
+                const allies = atk.team === 0 ? game.pTeam : game.eTeam;
+                // 체력이 가장 낮은(절대값 기준) 아군 찾기
+                const target = allies.filter(a => !a.isDead).sort((a, b) => a.hp - b.hp)[0];
+                if (target) {
+                    const h = target.heal(50);
+                    game.recordStat(atk, 'heal', h);
+                    UI.floatText(target, "+50(P)", "ft-heal");
+                    game.log(`<span class='log-sys'>💧 [패시브] ${target.name} 추가 치유 (+${h})</span>`);
+                }
+            }
+            
+            if (sIdx === 2) return false; // S2는 공격이 아니므로 투사체 소리 방지
         }
     },
     'Tree': {
         useSkill: function(atk, def, sIdx, game) {
             if (sIdx === 0) Common.basicAttack(atk, def, game);
             else if (sIdx === 1) {
-                game.log(`<b>[${atk.name}]</b> 광합성 🌿`);
+                // S1: 뿌리 묶기 (자신에게 수호 버프)
+                game.log(`<b>[${atk.name}]</b> 뿌리 묶기 🪵`);
                 AudioSys.play('POWER_UP');
-                atk.atk += 18;
-                atk.shield += 30;
-                atk.growthStack = (atk.growthStack || 0) + 1;
-                atk.addStatus('GROWTH', 99);
-                game.recordStat(atk, 'shield', 30);
-                UI.floatText(atk, "성장", "ft-heal");
-                Common.logAction(game, 'shield', atk, atk, 30, "(성장)");
+                
+                // ROOT_GUARD: 아군 피해 50% 대신 받음
+                atk.addStatus('ROOT_GUARD', 3, 0, atk);
+                UI.floatText(atk, "수호태세", "ft-heal");
+                Common.logAction(game, 'buff', atk, atk, 0, "(3턴간 피해분산)");
                 return false;
             } else {
+                // S2: 치유의 잎 (힐 140 + 조건부 패시브 강화)
                 if (!def) return;
                 game.log(`<b>[${atk.name}]</b> 치유의 잎 🌿`);
                 AudioSys.play('HEAL');
-                const h = def.heal(150);
+                
+                // 1. 힐 실행 [Balance] 140 -> 100 너프
+                const h = def.heal(100);
+                
+                // 2. 행동불가 CC 체크 (기절, 빙결, 수면 등)
+                // (일반 디버프인 침묵, 속박 등은 제외하고 완벽한 행동불가만 카운트하여 밸런스 조절)
+                const hardCC = ['STUN', 'FREEZE', 'SLEEP', 'BANISH'];
+                const hasHardCC = def.status.some(s => hardCC.includes(s.type));
+                
+                // 3. 정화
                 def.cleanse();
+                
+                // 4. CC 해제 성공 시 패시브 강화 (최대 2스택 = +10%)
+                let extraMsg = "(정화)";
+                if (hasHardCC) {
+                    if (atk.treeStack < 2) {
+                        atk.treeStack++;
+                        UI.floatText(atk, "거목성장!", "ft-crit");
+                        extraMsg += " + 🛡️성장";
+                    } else {
+                        UI.floatText(atk, "MAX", "ft-miss");
+                    }
+                }
+
                 game.recordStat(atk, 'heal', h);
-                Common.logAction(game, 'heal', atk, def, h, "(정화)");
+                Common.logAction(game, 'heal', atk, def, h, extraMsg);
                 return false;
             }
         }
@@ -1590,10 +2041,12 @@ const SKILL_LOGIC = {
             if (sIdx === 0) Common.basicAttack(atk, def, game);
             else if (sIdx === 1) {
                 game.log(`<b>[${atk.name}]</b> 강철베기 ⚔️`);
-                const act = Common.applyDamage(atk, def, 1.3, game);
+                // [Fix] 딜 1.1배로 하향
+                const act = Common.applyDamage(atk, def, 1.1, game);
                 if (act !== -1) {
                     Common.logAction(game, 'dmg', atk, def, act, "");
-                    const absorb = Math.floor(act * 0.3);
+                    // [Fix] 쉴드 흡수량 40%로 상향
+                    const absorb = Math.floor(act * 0.40);
                     atk.shield += absorb;
                     game.recordStat(atk, 'shield', absorb);
                     UI.floatText(atk, `+${absorb}🛡️`, "ft-heal");
@@ -1613,7 +2066,25 @@ const SKILL_LOGIC = {
             if (sIdx === 0) Common.basicAttack(atk, def, game);
             else if (sIdx === 1) {
                 game.log(`<b>[${atk.name}]</b> 암석투척 🪨`);
-                const act = Common.applyDamage(atk, def, 1.3, game);
+                
+                // [Balance] 버프 1개 파괴 (돌로 깨부수기)
+                let dispelled = false;
+                if (def.getKey() === 'Fire-Light' && def.s2Count > 0) { def.s2Count--; dispelled = true; }
+                else if (def.getKey() === 'Metal-Dark' && def.elecStacks > 0) { def.elecStacks--; dispelled = true; }
+                else if (def.getKey() === 'Tree' && def.treeStack > 0) { def.treeStack--; dispelled = true; }
+                if (!dispelled) {
+                    const buffs = ['EVADE', 'ATK_BUFF_SMALL', 'LIGHT_MIGHT', 'DMG_RED', 'GROWTH', 'LIFESTEAL_BUFF', 'ROOT_GUARD', 'START_IMMUNITY'];
+                    const idx = def.status.findIndex(s => buffs.includes(s.type));
+                    if (idx !== -1) {
+                        def.status.splice(idx, 1);
+                        UI.floatText(def, "파괴", "ft-miss");
+                        dispelled = true;
+                    }
+                }
+                if(dispelled) game.log(" (💥 버프 파괴!)");
+
+                // [Balance] 1.4배 데미지
+                const act = Common.applyDamage(atk, def, 1.4, game);
                 if (act !== -1) Common.logAction(game, 'dmg', atk, def, act, "");
                 if (act !== -1) {
                     if (game.netRandom() < 0.25) def.addStatus('STUN', 1, 0, atk);
@@ -1668,7 +2139,8 @@ const SKILL_LOGIC = {
             } else {
                 game.log(`<b>[${atk.name}]</b> 공포 😱`);
                 Common.forEachEnemy(atk, game, (e) => {
-                    const act = Common.applyDamage(atk, e, 0.3, game);
+                    // [Balance] 0.3배 -> 0.4배 상향
+                    const act = Common.applyDamage(atk, e, 0.4, game);
                     if (act !== -1) {
                         Common.logAction(game, 'dmg', atk, e, act, "");
                         const hasFear = e.status.some(s => s.type === 'ATK_DOWN');
@@ -1772,13 +2244,14 @@ const SKILL_LOGIC = {
                 const act = Common.applyDamage(atk, def, 1.3, game);
                 if (act !== -1) {
                     Common.logAction(game, 'dmg', atk, def, act, "");
+                    // [Balance] 최저 체력 아군에게 쉴드 40 부여
                     const allies = atk.team === 0 ? game.pTeam : game.eTeam;
-                    const alive = allies.filter(a => !a.isDead);
-                    if (alive.length > 0) {
-                        const t = alive[Math.floor(game.netRandom() * alive.length)];
-                        const h = t.heal(20);
-                        game.recordStat(atk, 'heal', h);
-                        Common.logAction(game, 'heal', atk, t, h, "(랜덤힐)");
+                    const target = allies.filter(a => !a.isDead).sort((a, b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+                    if (target) {
+                        target.shield += 40;
+                        game.recordStat(atk, 'shield', 40);
+                        UI.floatText(target, "+40🛡️", "ft-heal");
+                        Common.logAction(game, 'shield', atk, target, 40, "(보호)");
                     }
                 }
             } else {
@@ -1797,43 +2270,49 @@ const SKILL_LOGIC = {
     'Metal-Light': {
         useSkill: function(atk, def, sIdx, game) {
             if (sIdx === 0) Common.basicAttack(atk, def, game);
-            else if (sIdx === 1) {
+            else if (sIdx === 1) { // [S1] 가스탄 (나무 저격 + 폭발)
                 game.log(`<b>[${atk.name}]</b> 가스탄 ☣️`);
-                const buffs = ['EVADE', 'ATK_BUFF_SMALL', 'LIGHT_MIGHT'];
-                const hadBuff = def.status.some(s => buffs.includes(s.type));
-                def.status = def.status.filter(s => !buffs.includes(s.type));
-                if (hadBuff) UI.floatText(def, "해제", "ft-miss");
-                let reduced = false;
-                if (def.getKey() === 'Fire-Light' && def.s2Count > 0) {
-                    def.s2Count--;
-                    def.atk -= 20;
-                    reduced = true;
-                }
-                if (def.getKey() === 'Metal-Dark' && def.elecStacks > 0) {
-                    def.elecStacks--;
-                    def.atk -= 10;
-                    reduced = true;
-                }
-                if (def.getKey() === 'Tree' && def.growthStack > 0) {
-                    def.growthStack--;
-                    def.atk -= 18;
-                    def.shield = Math.max(0, def.shield - 30);
-                    reduced = true;
-                }
-                if (reduced) {
-                    game.log(" (📉스택 다운)");
-                    UI.floatText(def, "스택-1", "ft-miss");
-                }
                 
-                // [Balance] CC(기절/빙결/수면) 또는 면역(CC종료 직후) 상태면 데미지 50% 증가
-                const isCC = def.hasStatus('STUN') || def.hasStatus('FREEZE') || def.hasStatus('SLEEP') || def.hasStatus('IMMUNITY');
-                const dmgMult = isCC ? 0.45 : 0.3; // 0.3의 1.5배 = 0.45
+                // 1. 나무(Tree) 보호자 확인
+                const allies = def.team === 0 ? game.pTeam : game.eTeam;
+                const protector = allies.find(u => u.id !== def.id && !u.isDead && u.base === 'Tree' && u.hasStatus('ROOT_GUARD'));
                 
-                const act = Common.applyDamage(atk, def, dmgMult, game);
-                if (act !== -1) Common.logAction(game, 'dmg', atk, def, act, isCC ? "(추가딜)" : "");
-            } else {
+                // 2. 초기 3 데미지 (공용 분산 로직 사용!)
+                // 이렇게 해야 나무가 끼어들어 데미지를 나눠 갖고, 로그도 정상 출력됩니다.
+                Common.distributeDamage(atk, def, 3, game, false, true); 
+                
+                // 3. 폭발 대상 선정 (본체 + 보호자)
+                // 보호자가 있다면 무조건 가스 전이 대상으로 포함
+                let targets = [def];
+                if (protector) {
+                    targets.push(protector);
+                    game.log(`<span class="log-crit">☣️ [${protector.name}] 가스 전이!</span>`);
+                }
+
+                // 4. 연쇄 폭발 (즉시 실행 - 오류 방지)
+                targets.forEach((t) => {
+                    if (t.isDead) return;
+
+                    const isCC = t.hasStatus('STUN') || t.hasStatus('FREEZE') || t.hasStatus('SLEEP');
+                    const mult = isCC ? 1.3 : 1.0;
+                    
+                    // 시각 효과 (즉시 재생)
+                    UI.playVFX(t, 'magic');
+                    
+                    // 데미지 적용
+                    const act = Common.applyDamage(atk, t, mult, game);
+                    if (act !== -1) {
+                        Common.logAction(game, 'dmg', atk, t, act, isCC ? "(CC추가타)" : "(가스폭발)");
+                    }
+                });
+            } else { // [S2] 맹독 살포
                 game.log(`<b>[${atk.name}]</b> 맹독살포 ☠️`);
-                Common.forEachEnemy(atk, game, (e) => e.addStatus('POISON', 3, 0, atk));
+                Common.forEachEnemy(atk, game, (e) => {
+                    e.addStatus('POISON', 3, 0, atk);
+                    // [Balance] 힐 효율 20% 감소
+                    e.addStatus('HEAL_DOWN', 3, 20, atk); 
+                });
+                game.log("<span class='log-sys'>(전체 중독 + 치유효율 20% 감소)</span>");
             }
         }
     },
@@ -1859,8 +2338,12 @@ const SKILL_LOGIC = {
                 }
             } else {
                 game.log(`<b>[${atk.name}]</b> 모래지옥 ⏳`);
-                def.addStatus('TRAP', 2, 0, atk);
-                def.addStatus('HEAL_DOWN', 2, 0, atk);
+                // 속박(TRAP) 부여
+                def.addStatus('TRAP', 2, 60, atk); // 데미지 60 명시
+                
+                // [Fix] 치유 감소 50% 부여 (정화되지 않음)
+                def.addStatus('HEAL_DOWN', 2, 50, atk); 
+                game.log("<span class='log-sys'>(치유효율 50% 감소)</span>");
             }
         }
     },
@@ -1870,7 +2353,16 @@ const SKILL_LOGIC = {
             else if (sIdx === 1) {
                 game.log(`<b>[${atk.name}]</b> 고드름 ❄️`);
                 const act = Common.applyDamage(atk, def, 1.5, game);
-                if (act !== -1) Common.logAction(game, 'dmg', atk, def, act, "");
+                if (act !== -1) {
+                    Common.logAction(game, 'dmg', atk, def, act, "");
+                    // [Balance] 입힌 피해의 20% 쉴드 획득 (패시브)
+                    const shieldAmt = Math.floor(act * 0.2);
+                    if (shieldAmt > 0) {
+                        atk.shield += shieldAmt;
+                        game.recordStat(atk, 'shield', shieldAmt);
+                        UI.floatText(atk, `+${shieldAmt}🛡️`, "ft-heal");
+                    }
+                }
             } else {
                 game.log(`<b>[${atk.name}]</b> 절대영도 🥶`);
                 const act = Common.applyDamage(atk, def, 1.0, game);
@@ -1883,6 +2375,7 @@ const SKILL_LOGIC = {
         useSkill: function(atk, def, sIdx, game) {
             if (sIdx === 0) Common.basicAttack(atk, def, game);
             else if (sIdx === 1) {
+                // [Balance] 패시브(자가 화상) 삭제됨
                 game.log(`<b>[${atk.name}]</b> 흑염 🌑`);
                 const act = Common.applyDamage(atk, def, 1.0, game);
                 if (act !== -1) {
@@ -1890,6 +2383,7 @@ const SKILL_LOGIC = {
                     Common.forEachEnemy(atk, game, (e) => e.addStatus('BURN', 2, 0, atk));
                 }
             } else {
+                // [Balance] 패시브(자가 화상) 삭제됨
                 game.log(`<b>[${atk.name}]</b> 소각 🔥`);
                 const act = Common.applyDamage(atk, def, 1.0, game);
                 if (act !== -1) {
@@ -1954,25 +2448,34 @@ const SKILL_LOGIC = {
             if (sIdx === 0) Common.basicAttack(atk, def, game);
             else if (sIdx === 1) {
                 game.log(`<b>[${atk.name}]</b> 낙석 🧗`);
+                UI.playVFX(def, 'rock'); // [이펙트] 돌덩이 쿵
                 const act = Common.applyDamage(atk, def, 1.5, game);
                 if (act !== -1) Common.logAction(game, 'dmg', atk, def, act, "");
             } else {
                 game.log(`<b>[${atk.name}]</b> 산사태 🌋`);
-                const act = Common.applyDamage(atk, def, 2.5, game);
+                UI.playVFX(def, 'rock'); // [이펙트] 강력한 바위
+                
+                // 2.35배 데미지 + 반동 로직 유지
+                const act = Common.applyDamage(atk, def, 2.35, game);
                 if (act !== -1) Common.logAction(game, 'dmg', atk, def, act, "");
+                
                 if (atk.hasStatus('IMMUNITY')) {
                     atk.status = atk.status.filter(s => s.type !== 'IMMUNITY');
                     UI.floatText(atk, "면역삭제", "ft-miss");
                 }
+
+                // 기절 부여
                 const ex = atk.status.find(s => s.type === 'STUN');
                 if (ex) ex.turn = 2;
-                else atk.status.push({
-                    type: 'STUN',
-                    turn: 2,
-                    val: 0
-                });
-                UI.floatText(atk, "💤휴식", "ft-miss");
-                game.log("(반동:휴식)");
+                else atk.status.push({ type: 'STUN', turn: 2, val: 0 });
+
+                // 반동 부여 (받는 피해 15 증가)
+                const recoil = atk.status.find(s => s.type === 'EARTH_RECOIL');
+                if (recoil) recoil.turn = 2;
+                else atk.status.push({ type: 'EARTH_RECOIL', turn: 2, val: 15 });
+
+                UI.floatText(atk, "💤휴식+반동", "ft-miss");
+                game.log("(반동: 기절 + 받는데미지 증가)");
             }
         }
     },
@@ -1997,67 +2500,62 @@ const SKILL_LOGIC = {
         }
     },
 'Dark-Dark': {
-    useSkill: function(atk, def, sIdx, game) {
-        if (sIdx === 0) Common.basicAttack(atk, def, game);
-        else if (sIdx === 1) {
-            game.log(`<b>[${atk.name}]</b> 심연일격 🗡️`); // ✅ 괄호 () 필요
-            const act = Common.applyDamage(atk, def, 0.8, game);
-            if (act !== -1) {
-                Common.logAction(game, 'dmg', atk, def, act, "");
-                def.addStatus('SILENCE', 1, 0, atk);
-            }
-        } else {
-            // 세뇌 스킬 (온라인/오프라인 모두 사용 가능)
-            game.log(`<b>[${atk.name}]</b> 마인드 컨트롤 🧠`);
-    
-            // [제약 1] 이미 누군가를 조종 중이면 불가
-            if (game.isMindControlling) {
-                game.log("<span class='log-sys'>🚫 이미 조종 중인 대상이 있습니다!</span>");
-                UI.floatText(atk, "사용불가", "ft-miss");
-                return;
-            }
-            
-            // [제약 1] 이미 누군가를 조종 중이면 불가
-            if (game.isMindControlling) {
-                game.log("<span class='log-sys'>🚫 이미 조종 중인 대상이 있습니다!</span>");
-                UI.floatText(atk, "사용불가", "ft-miss");
-                return;
-            }
-            
-            // [제약 2] 면역 체크
-            if (def.getKey() === 'Dark-Dark' || def.hasStatus('IMMUNITY') || (def.isNormal && !def.extra)) {
-                game.log("<span class='log-sys'>🚫 정신 지배가 통하지 않는 대상입니다.</span>");
-                UI.floatText(def, "면역", "ft-miss");
-                return;
-            }
-
-            // 1. 코스트 지불
-            const cost = Math.floor(atk.hp * 0.12);
-            atk.hp = Math.max(1, atk.hp - cost);
-            UI.floatText(atk, `HP소모(-${cost})`, "ft-miss");
-            
-            // 2. 확률 계산
-            const missingPct = 1.0 - (def.hp / def.maxHp);
-            // [Balance] 30% ~ 55%로 상향
-            const chance = 0.30 + (missingPct * 0.25);
-
-            if (game.netRandom() < chance) {
-                def.addStatus('MC_WAIT', 1, 0, atk, true); 
-                game.log(` 🌀 <b>[${def.name}]</b> 정신 지배 시작! (1턴 후 스킵, 그 다음 조종)`);
-                UI.floatText(def, "세뇌 대기", "ft-crit");
-                AudioSys.play('DEBUFF');
-            } else if (def.hasStatus('MC_WAIT') || def.hasStatus('MC_READY')) {
-                // 이미 걸려있는 경우
-                game.log("<span class='log-sys'>🚫 이미 정신 지배가 진행 중인 대상입니다.</span>");
-                UI.floatText(def, "중복불가", "ft-miss");
+        useSkill: function(atk, def, sIdx, game) {
+            if (sIdx === 0) Common.basicAttack(atk, def, game);
+            else if (sIdx === 1) {
+                game.log(`<b>[${atk.name}]</b> 심연일격 🗡️`);
+                const act = Common.applyDamage(atk, def, 0.8, game);
+                if (act !== -1) {
+                    Common.logAction(game, 'dmg', atk, def, act, "");
+                    def.addStatus('SILENCE', 1, 0, atk);
+                }
             } else {
-                game.log(" (정신 지배 실패)");
-                UI.floatText(def, "저항", "ft-miss");
+                // 세뇌 스킬
+                game.log(`<b>[${atk.name}]</b> 마인드 컨트롤 🧠`);
+        
+                // [제약 1] 이미 조종 중이면 불가
+                if (game.isMindControlling) {
+                    game.log("<span class='log-sys'>🚫 이미 조종 중인 대상이 있습니다!</span>");
+                    UI.floatText(atk, "사용불가", "ft-miss");
+                    return;
+                }
+                
+                // [제약 2] 면역 체크
+                if (def.getKey() === 'Dark-Dark' || def.hasStatus('IMMUNITY') || (def.isNormal && !def.extra)) {
+                    game.log("<span class='log-sys'>🚫 정신 지배가 통하지 않는 대상입니다.</span>");
+                    UI.floatText(def, "면역", "ft-miss");
+                    return;
+                }
+
+                // 1. 코스트 지불
+                const cost = Math.floor(atk.hp * 0.12);
+                atk.hp = Math.max(1, atk.hp - cost);
+                UI.floatText(atk, `HP소모(-${cost})`, "ft-miss");
+                
+                // 2. 확률 계산
+                const missingPct = 1.0 - (def.hp / def.maxHp);
+                let chance = 0.30 + (missingPct * 0.25);
+                
+                // 🟢 [수정됨] 챌린지 모드 + '적군(Team 1)'일 때만 90% 적용
+                if (game.mode === 'challenge' && atk.team === 1) {
+                    chance = 0.90;
+                    game.log("<span class='log-sys' style='color:#ff5252;'>⚠️ [BOSS] 적의 정신지배 확률이 대폭 상승합니다! (90%)</span>");
+                }
+
+                // 3. 성공/실패 판정
+                if (game.netRandom() < chance) {
+                    def.addStatus('MC_WAIT', 1, 0, atk, true); 
+                    game.log(` 🌀 <b>[${def.name}]</b> 정신 지배 시작! (1턴 후 스킵, 그 다음 조종)`);
+                    UI.floatText(def, "세뇌 대기", "ft-crit");
+                    AudioSys.play('DEBUFF');
+                } else {
+                    game.log(" (정신력으로 저항했습니다!)");
+                    UI.floatText(def, "저항", "ft-miss");
+                }
             }
         }
     }
-}
-};
+}; // SKILL_LOGIC 끝
 
 class Unit {
     constructor(id, team, base, extra) {
@@ -2065,9 +2563,14 @@ class Unit {
         this.team = team;
         this.base = base;
         this.extra = extra;
-        this.maxHp = 600;
-        if (base === 'Tree' && extra === 'Dark') this.maxHp = 700;
-        if (base === 'Fire' && extra === 'Light') this.maxHp = 650;
+        // [Balance] 기본 체력 +100 상향 (전투 호흡 조절)
+        this.maxHp = 700;
+        // 가시(Tree-Dark)는 탱커형 딜러라 더 높게 유지 (+100 차이)
+        if (base === 'Tree' && extra === 'Dark') this.maxHp = 800;
+        // 푸른불(Fire-Light)은 서브 탱커라 약간 높게 유지 (+50 차이)
+        if (base === 'Fire' && extra === 'Light') this.maxHp = 750;
+        // [Balance] 불(Fire) 기본 체력 50 너프 (유리대포 화)
+        if (base === 'Fire' && !extra) this.maxHp = 650;
         this.hp = this.maxHp;
         this.evadeTriggered = false;
         this.revengeAtk = 0;
@@ -2086,6 +2589,7 @@ class Unit {
         this.s2Count = 0;
         this.elecStacks = 0;
         this.growthStack = 0;
+        this.treeStack = 0; // [Tree] 패시브 스택 (0~2)
         this.resist = 0;
         this.stats = {
             dmg: 0,
@@ -2160,8 +2664,9 @@ if (awakened) {
         let v = this.atk;
         if (this.base === 'Fire' && !this.extra) {
             const turn = Game.turnCount;
-            if (turn <= 12) v += 20;
+            if (turn <= 12) v += 15;
             else if (turn <= 36) v += 10;
+            else v += 5;
         }
         if (this.revengeAtk > 0) v += this.revengeAtk;
         const lightMight = this.status.find(s => s.type === 'LIGHT_MIGHT');
@@ -2170,6 +2675,10 @@ if (awakened) {
             else v += 20;
         }
         if (this.hasStatus('ATK_BUFF_SMALL')) v += 10;
+
+        // [신규] 데미지 10% 증가 버프 적용 (최종 곱연산)
+        if (this.hasStatus('DMG_UP_10')) v = Math.floor(v * 1.1);
+        
         v = Math.max(10, v);
         const ads = this.status.filter(s => s.type === 'ATK_DOWN');
         if (ads.length > 0) {
@@ -2187,10 +2696,17 @@ if (awakened) {
     }
 
     takeDamage(dmg, isFire = false, ignoreShield = false, source = null) {
+        // [Tree 패시브] 거목: 기본 15% 뎀감 + 스택당 5% (최대 25%)
+        if (this.base === 'Tree') {
+            const reducePct = 0.15 + (this.treeStack * 0.05);
+            dmg = Math.floor(dmg * (1.0 - reducePct));
+        }
+
         if (isFire && this.hasStatus('BURN')) dmg = Math.floor(dmg * 1.25);
 
         if (this.base === 'Metal' && !this.extra && this.shield > 0) {
-            const cap = Math.floor(this.maxHp * 0.30);
+            // [Balance] 패시브 발동 조건 완화 (MaxHP 30% -> 20%)
+            const cap = Math.floor(this.maxHp * 0.20);
             if (dmg > cap) {
                 dmg = cap;
                 UI.floatText(this, "Iron Will", "ft-heal");
@@ -2234,10 +2750,10 @@ if (awakened) {
         } else {
             hpDmg = dmg;
         }
-        if (hpDmg > 0 && this.base === 'Earth' && this.extra === 'Dark' && this.hasStatus('STUN')) {
-            hpDmg += 10;
-            this.stats.taken += 10;
-            UI.floatText(this, "Crack!", "ft-crit");
+        if (hpDmg > 0 && this.hasStatus('EARTH_RECOIL')) {
+            hpDmg += 15;
+            this.stats.taken += 15;
+            UI.floatText(this, "Crack(+15)", "ft-crit");
         }
         this.hp = Math.max(0, this.hp - hpDmg);
 
@@ -2276,6 +2792,7 @@ if (awakened) {
     addStatus(type, turn, val = 0, source = null, force = false) {
         const CC_LIST = ['STUN', 'FREEZE', 'BANISH', 'SILENCE', 'SLEEP'];
         
+        // 1. 선공 방어막 체크
         if (this.hasStatus('START_IMMUNITY') && !force) {
             if (CC_LIST.includes(type) || type.startsWith('PROVOKED')) { 
                 UI.floatText(this, "🛡️CC방어", "ft-miss");
@@ -2283,6 +2800,7 @@ if (awakened) {
             }
         }
 
+        // 2. 업보(Karma) 반사 체크
         if (source && source.id !== this.id && !force) {
             const karma = source.status.find(s => s.type === `KARMA_VICTIM_${this.id}`);
             const isDarkVsDark = (this.base === 'Dark' && source.base === 'Dark');
@@ -2297,13 +2815,29 @@ if (awakened) {
                 }
             }
         }
-        // 1. 노말 면역 체크 (PROVOKED 제외)
+
+        // 3. 노말 면역 체크
         const NORMAL_IMMUNE = ['FREEZE', 'STUN', 'BANISH', 'SILENCE'];
         if (this.isNormal && !force && NORMAL_IMMUNE.includes(type)) {
             UI.floatText(this, "Immune", "ft-miss");
             return;
         }
 
+        // 🔥 4. 중첩 가능 상태이상(공격/치유 감소) 최우선 처리
+        if (type === 'ATK_DOWN' || type === 'HEAL_DOWN') {
+            const s = this.status.filter(s => s.type === type);
+            if (s.length < 2) {
+                this.status.push({ type, turn, val, sourceId: source ? source.id : -1 });
+            } else {
+                const shortest = s.sort((a, b) => a.turn - b.turn)[0];
+                shortest.turn = turn;
+                shortest.val = val; 
+                if (source) shortest.sourceId = source.id;
+            }
+            return;
+        }
+
+        // 5. 그 외 일반 상태이상 (중복 시 덮어쓰기/갱신)
         const existing = this.status.find(s => s.type === type);
         if (existing && !force) {
             if (turn > existing.turn) {
@@ -2314,6 +2848,7 @@ if (awakened) {
             return;
         }
         
+        // 6. 상호 배타적 상태이상 제거
         const MUTUALLY_EXCLUSIVE = {
             'STUN': ['FREEZE', 'BANISH', 'SLEEP'],
             'FREEZE': ['STUN', 'BANISH', 'SLEEP'],
@@ -2335,7 +2870,7 @@ if (awakened) {
             }
         }
         
-        // 2. 회피 체크 (노말도 가능)
+        // 7. 회피 체크
         if (this.hasStatus('EVADE') && ['STUN', 'FREEZE'].includes(type) && !force) {
             if (source && source.id !== this.id) {
                 if (Game.netRandom() < 0.40) {
@@ -2346,7 +2881,7 @@ if (awakened) {
             }
         }
 
-        // 3. 도발은 별도 체크
+        // 8. 도발 및 기타 면역
         if (this.isNormal && !force && type.startsWith('PROVOKED')) {
             UI.floatText(this, "Immune", "ft-miss");
             return;
@@ -2364,39 +2899,16 @@ if (awakened) {
                 });
             }
         }
-        if (this.resist > 0 && Game.netRandom() < this.resist && ['POISON', 'BURN', 'FREEZE', 'STUN', 'SILENCE', 'BLIND', 'TRAP', 'BANISH', 'ATK_DOWN'].includes(type)) return;
+        if (this.resist > 0 && Game.netRandom() < this.resist && ['POISON', 'BURN', 'FREEZE', 'STUN', 'SILENCE', 'BLIND', 'TRAP', 'BANISH', 'ATK_DOWN', 'HEAL_DOWN'].includes(type)) return;
         
-        if (type === 'ATK_DOWN') {
-            const s = this.status.filter(s => s.type === 'ATK_DOWN');
-            if (s.length < 2) {
-                this.status.push({
-                    type,
-                    turn,
-                    val,
-                    sourceId: source ? source.id : -1
-                });
-            } else {
-                const shortest = s.sort((a, b) => a.turn - b.turn)[0];
-                shortest.turn = turn;
-                if(source) shortest.sourceId = source.id;
-            }
-            return;
-        }
-
-        const idx = this.status.findIndex(s => s.type === type);
-    if (idx >= 0) {
-        this.status[idx].turn = turn;
-        if (val !== 0) this.status[idx].val = val;
-        if (source) this.status[idx].sourceId = source.id; // ✅ 갱신 시에도 sourceId 저장
-    } else {
+        // 9. 최종 등록
         this.status.push({
             type,
             turn,
             val,
-            sourceId: source ? source.id : -1 // ✅ 신규 생성 시 sourceId 저장
+            sourceId: source ? source.id : -1
         });
     }
-}
     hasStatus(type) {
         return this.status.some(s => s.type === type);
     }
@@ -2413,18 +2925,36 @@ if (awakened) {
 
     tickStatus() {
         let log = [];
-        if (this.hasStatus('POISON')) {
-            const d = this.takeDamage(35, false, false, null);
+        const allUnits = [...Game.pTeam, ...Game.eTeam];
+        const findSource = (id) => allUnits.find(u => u.id === id) || null;
+
+        // 1. 독 (Poison)
+        const poison = this.status.find(s => s.type === 'POISON');
+        if (poison) {
+            const src = findSource(poison.sourceId);
+            const d = this.takeDamage(35, false, false, src); // 킬 로그를 위해 src 전달
+            if (src) Game.recordStat(src, 'dmg', d);          // 통계 기록
             UI.floatText(this, d, 'ft-dmg');
             log.push(`☠️ [${this.name}] 독 피해 -${d}`);
         }
-        if (this.hasStatus('BURN')) {
-            const d = this.takeDamage(20, false, false, null);
+
+        // 2. 화상 (Burn)
+        const burn = this.status.find(s => s.type === 'BURN');
+        if (burn) {
+            const src = findSource(burn.sourceId);
+            const d = this.takeDamage(20, false, false, src);
+            if (src) Game.recordStat(src, 'dmg', d);
             UI.floatText(this, d, 'ft-dmg');
             log.push(`🔥 [${this.name}] 화상 피해 -${d}`);
         }
-        if (this.hasStatus('TRAP')) {
-            const d = this.takeDamage(40, false, false, null);
+
+        // 3. 모래지옥 (Trap)
+        const trap = this.status.find(s => s.type === 'TRAP');
+        if (trap) {
+            const src = findSource(trap.sourceId);
+            // [Balance] 속박 데미지 40 -> 60 상향 유지
+            const d = this.takeDamage(60, false, false, src);
+            if (src) Game.recordStat(src, 'dmg', d);
             UI.floatText(this, d, 'ft-dmg');
             log.push(`⏳ [${this.name}] 모래지옥 -${d}`);
         }
@@ -2435,7 +2965,28 @@ if (awakened) {
         this.status = this.status.filter(s => s.turn > 0);
     }
     heal(amount) {
-        if (this.hasStatus('HEAL_DOWN')) amount = Math.floor(amount * 0.4);
+        // [수정] 치유 감소(HEAL_DOWN) 로직 검증 및 디버깅
+        const healDebuffs = this.status.filter(s => s.type === 'HEAL_DOWN');
+        if (healDebuffs.length > 0) {
+            // 감소율 합산 (예: 독20 + 모래70 = 90)
+            const totalReduction = healDebuffs.reduce((sum, s) => sum + (s.val || 0), 0);
+            
+            // 기존 힐량 저장 (디버깅용)
+            const originalAmount = amount;
+            
+            // 효율 계산 (100 - 감소율)% 적용
+            const multiplier = Math.max(0, (100 - totalReduction) / 100);
+            amount = Math.floor(amount * multiplier);
+
+            // [디버그 로그] 콘솔창(F12)에서 작동 여부 확인 가능
+            console.log(`💉 [Healing] ${this.name}: ${originalAmount} -> ${amount} (감소율: ${totalReduction}%)`);
+            
+            // 치유 감소로 0이 되었을 때 "치유차단" 텍스트 표시
+            if (amount === 0 && originalAmount > 0) {
+                UI.floatText(this, "치유차단", "ft-miss");
+            }
+        }
+
         const prev = this.hp;
         this.hp = Math.min(this.maxHp, this.hp + amount);
         const diff = this.hp - prev;
@@ -2708,6 +3259,11 @@ const UI = {
         const el = document.getElementById('audio-settings');
         el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
     },
+    // [신규] 저장/불러오기 메뉴 토글
+    toggleSaveMenu: function() {
+        const el = document.getElementById('save-menu-popup');
+        el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    },
 	// [UI] BGM 선택 및 하이라이트 처리
     selectBGM: function(trackName, el) {
         // 1. 모든 옵션에서 active 제거
@@ -2791,7 +3347,46 @@ const UI = {
                 </div> 
             </div>`;
         });
-        const content = `<div class="tab-header"> <button class="tab-btn active" onclick="UI.switchTab(0)">📊 상성표</button> <button class="tab-btn" onclick="UI.switchTab(1)">📖 도감</button> </div> <div id="tab-0" class="tab-content active"> <table class="chart-table"> <tr><th>공격자</th><th>유리한 대상 (1.2배)</th></tr> <tr><td>🔥 불</td><td>⚔️ 쇠, 🌿 나무</td></tr> <tr><td>💧 물</td><td>🔥 불, ⚔️ 쇠</td></tr> <tr><td>🌿 나무</td><td>💧 물, ⛰️ 흙</td></tr> <tr><td>⚔️ 쇠</td><td>🌿 나무, ⛰️ 흙</td></tr> <tr><td>⛰️ 흙</td><td>🔥 불, 💧 물</td></tr> <tr><td>☀️/🌙</td><td>서로에게 1.2배</td></tr> <tr><td>🎲 노말</td><td>노말(자신), 강화된 빛/어둠</td></tr> </table> <div class="dual-chart"> <div style="font-weight:bold; color:#00cec9; margin-bottom:5px;">⚡ 이중 상성 (1.3배 치명타)</div> <div class="dual-row" style='font-size:12px; color:#666;'>기초 속성 우위 + 빛/어둠이 상대와 반대일 때</div> </div> </div> <div id="tab-1" class="tab-content" style="max-height: 50vh; overflow-y:auto;"> ${heroList} </div>`;
+
+        // [수정됨] 후공 보너스 설명이 포함된 컨텐츠 HTML
+        const content = `
+        <div class="tab-header">
+            <button class="tab-btn active" onclick="UI.switchTab(0)">📊 상성표</button>
+            <button class="tab-btn" onclick="UI.switchTab(1)">📖 도감</button>
+        </div>
+        
+        <div id="tab-0" class="tab-content active">
+            <table class="chart-table">
+                <tr><th>공격자</th><th>유리한 대상 (1.2배)</th></tr>
+                <tr><td>🔥 불</td><td>⚔️ 쇠, 🌿 나무</td></tr>
+                <tr><td>💧 물</td><td>🔥 불, ⚔️ 쇠</td></tr>
+                <tr><td>🌿 나무</td><td>💧 물, ⛰️ 흙</td></tr>
+                <tr><td>⚔️ 쇠</td><td>🌿 나무, ⛰️ 흙</td></tr>
+                <tr><td>⛰️ 흙</td><td>🔥 불, 💧 물</td></tr>
+                <tr><td>☀️/🌙</td><td>서로에게 1.2배</td></tr>
+                <tr><td>🎲 노말</td><td>노말(자신), 강화된 빛/어둠</td></tr>
+            </table>
+            
+            <div class="dual-chart">
+                <div style="font-weight:bold; color:#00cec9; margin-bottom:5px;">⚡ 이중 상성 (1.3배 치명타)</div>
+                <div class="dual-row" style='font-size:12px; color:#666;'>기초 속성 우위 + 빛/어둠이 상대와 반대일 때</div>
+            </div>
+
+            <div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid #90caf9;">
+                <h4 style="margin: 0 0 5px 0; color: #1565c0;">🛡️ 후공(2P) 전술 보너스</h4>
+                <p style="font-size: 0.9em; margin: 0; color: #424242;">
+                    불리한 후공을 위해 특별한 효과가 부여됩니다.<br>
+                    1. <b>모든 유닛:</b> 시작 시 행동 불가 <span style="color:#2980b9;">면역</span><br>
+                    2. <b>선봉장(1번 유닛):</b> 1턴간 <b style="color:red;">최종 데미지 10% 증가</b><br>
+                    <span style="font-size:0.85em; color:#555;">(TIP: 1번 자리에 강력한 딜러를 배치해 카운터를 노리세요!)</span>
+                </p>
+            </div>
+        </div>
+        
+        <div id="tab-1" class="tab-content" style="max-height: 50vh; overflow-y:auto;">
+            ${heroList}
+        </div>`;
+        
         this.showModal("📘 가이드북", content);
     },
     switchTab: function(idx) {
@@ -2834,17 +3429,52 @@ const UI = {
     },
     showTurnBanner: function(isPlayerTurn) {
         const banner = document.getElementById('turn-banner');
+        if (!banner) return; // 배너 없으면 조용히 종료
+
+        // (기존 배너 로직 유지)
         if (isPlayerTurn) {
             banner.style.background = 'linear-gradient(90deg, transparent, rgba(33, 150, 243, 0.8), transparent)';
-            banner.innerHTML = "⚔️ 아군 턴 (Player Turn)";
+            banner.innerHTML = "⚔️ 아군 턴";
         } else {
             banner.style.background = 'linear-gradient(90deg, transparent, rgba(255, 87, 34, 0.8), transparent)';
-            banner.innerHTML = "👹 적군 턴 (Enemy Turn)";
+            banner.innerHTML = "👹 적군 턴";
         }
         banner.style.animation = 'none';
         void banner.offsetWidth;
-        const duration = Game.turnCount > 5 ? '0.6s' : '1.2s';
-        banner.style.animation = `banner-swipe ${duration} cubic-bezier(0.22, 1, 0.36, 1) forwards`;
+        banner.style.animation = 'banner-swipe 1.2s forwards';
+    },
+    // [수정] 이펙트를 화면 전체 좌표 기준으로 생성 (가려짐 방지)
+    playVFX: function(unit, type) {
+        const id = unit.team === 0 ? `p-card-${unit.id}` : `e-card-${unit.id}`;
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        // 타겟 카드의 현재 화면상 위치(좌표)를 가져옴
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const vfx = document.createElement('div');
+        vfx.className = 'vfx-layer';
+        // 좌표를 직접 지정 (화면 기준 절대 좌표)
+        vfx.style.left = `${centerX}px`;
+        vfx.style.top = `${centerY}px`;
+        vfx.style.transform = "translate(-50%, -50%)"; // 중앙 정렬 보정
+        
+        switch(type) {
+            case 'hit': vfx.innerText = '💥'; vfx.style.animation = 'vfx-boom 0.4s ease-out forwards'; break;
+            case 'slash': vfx.innerText = '⚔️'; vfx.style.animation = 'vfx-slash 0.3s ease-out forwards'; break;
+            case 'fire': vfx.innerText = '🔥'; vfx.style.animation = 'vfx-boom 0.6s ease-out forwards'; vfx.style.color = 'orange'; break;
+            case 'ice': vfx.innerText = '❄️'; vfx.style.animation = 'vfx-boom 0.5s ease-out forwards'; break;
+            case 'heal': vfx.innerText = '✨'; vfx.style.animation = 'vfx-heal 0.8s ease-out forwards'; break;
+            case 'rock': vfx.innerText = '🪨'; vfx.style.animation = 'vfx-boom 0.4s cubic-bezier(0.1, 0.7, 1.0, 0.1) forwards'; break;
+            case 'magic': vfx.innerText = '🌀'; vfx.style.animation = 'vfx-magic 0.7s ease-out forwards'; break;
+            default: vfx.innerText = '💥'; vfx.style.animation = 'vfx-boom 0.4s ease-out forwards'; break;
+        }
+        
+        // 카드가 아닌 'body'에 직접 붙여서 가장 위에 표시
+        document.body.appendChild(vfx);
+        setTimeout(() => vfx.remove(), 1000);
     },
     showResult: function(winnerTeamStr) {
         const allUnits = [...Game.pTeam, ...Game.eTeam];
@@ -3073,14 +3703,36 @@ const UI = {
         });
     },
 
-    // [신규] 히트 스톱 (타격감 극대화)
+    // [기존 히트 스톱 기능 유지]
     hitStop: function(duration = 150) {
         document.body.classList.add('hit-stopped');
         setTimeout(() => {
             document.body.classList.remove('hit-stopped');
         }, duration);
+    },
+
+    // [메뉴 열기/닫기 기능]
+    toggleDock: function() {
+        const el = document.getElementById('dock-folder');
+        if (!el) return; 
+
+        if (el.classList.contains('show')) {
+            el.classList.remove('show');
+            el.style.display = 'none'; 
+            
+            const s1 = document.getElementById('audio-settings');
+            const s2 = document.getElementById('save-menu-popup');
+            if(s1) s1.style.display = 'none';
+            if(s2) s2.style.display = 'none';
+        } else {
+            el.style.display = 'flex'; 
+            void el.offsetWidth; 
+            el.classList.add('show');
+            el.style.zIndex = '9999';
+        }
     }
-};
+}; // UI 객체 여기서 끝! (중괄호, 세미콜론 필수)
+
 
 const Game = {
     // [추가] 디버그 모드 설정
@@ -3254,38 +3906,70 @@ const Game = {
         grid.innerHTML = '';
         grid.style.display = 'block';
         grid.style.overflowY = 'auto';
-        const categories = [{
-            name: "🛡️ 탱커 (Tank)",
-            range: [0, 3],
-            color: "#e3f2fd",
-            border: "#90caf9"
-        }, {
-            name: "⚔️ 딜러 (Dealer)",
-            range: [4, 13],
-            color: "#ffebee",
-            border: "#ef9a9a"
-        }, {
-            name: "🧩 지원 (Support)",
-            range: [14, 19],
-            color: "#f1f8e9",
-            border: "#a5d6a7"
-        }];
+
+        const categories = [
+            { name: "🛡️ 탱커 (Tank)", range: [0, 3], color: "#e3f2fd", border: "#90caf9" },
+            { name: "⚔️ 딜러 (Dealer)", range: [4, 13], color: "#ffebee", border: "#ef9a9a" },
+            { name: "🧩 지원 (Support)", range: [14, 19], color: "#f1f8e9", border: "#a5d6a7" }
+        ];
+
         categories.forEach(cat => {
+            // 카테고리 헤더
             const header = document.createElement('div');
-            header.style.cssText = `width:100%; padding:8px; background:${cat.color}; border-left:5px solid ${cat.border}; font-weight:bold; margin-top:10px; border-radius:5px; color:#455a64; text-align:left; box-sizing:border-box;`;
+            header.style.cssText = `width:100%; padding:8px 15px; background:${cat.color}; border-left:5px solid ${cat.border}; font-weight:bold; margin-top:15px; border-radius:8px; color:#455a64; text-align:left; box-sizing:border-box; font-size:15px;`;
             header.innerText = cat.name;
             grid.appendChild(header);
+
+            // 카드 그리드 컨테이너
             const container = document.createElement('div');
-            container.style.cssText = "display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; padding:10px 0;";
+            container.style.cssText = "display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:10px; padding:10px 0;";
+
             for (let i = cat.range[0]; i <= cat.range[1]; i++) {
                 const u = this.pool[i];
+                const key = u.getKey();
+                const info = SKILL_DB[key];
+                
+                // [1] 아이콘 생성 (전투 화면과 동일 로직)
+                let iconsHtml = '';
+                if (ATTR[u.base]) iconsHtml += `<div class="tiny-icon">${ATTR[u.base].i}</div>`;
+                if (u.extra && ATTR[u.extra]) iconsHtml += `<div class="tiny-icon">${ATTR[u.extra].i}</div>`;
+                if (iconsHtml === '' && info) iconsHtml = `<div class="tiny-icon">${info.icon}</div>`;
+
+                // [2] 이름 및 설명 간소화
+                // 이름에서 불필요한 괄호 제거 (예: "푸른불 (불+빛)" -> "푸른불")
+                const cleanName = u.name.split(' ')[0]; 
+                // 설명은 스킬DB의 짧은 설명 사용 (예: "광역 딜러")
+                // HTML 태그(<br>)가 있다면 첫 줄만 가져옴
+                let shortDesc = info.desc.split('<br>')[0];
+
+                const imgUrl = IMAGE_DB[key] || IMAGE_DB['Default'];
+                
+                // 배경 틴트
+                let tintColor = 'transparent';
+                if(u.base === 'Fire') tintColor = 'rgba(255, 0, 0, 0.1)';
+                else if(u.base === 'Water') tintColor = 'rgba(0, 0, 255, 0.1)';
+                else if(u.base === 'Tree') tintColor = 'rgba(0, 255, 0, 0.1)';
+
                 const el = document.createElement('div');
-                el.className = 'hero-card';
+                // .unit 클래스를 추가하여 전투 카드 스타일을 가져오고, .hero-card로 선택 화면 전용 스타일 덮어쓰기
+                el.className = 'unit hero-card'; 
                 el.id = `card-${i}`;
-                el.innerHTML = this.renderCard(u);
-                el.onclick = () => {
-                    this.toggle(i, el);
-                };
+                
+                // [3] HTML 조립
+                el.innerHTML = `
+                    <div class="unit-img-bg" style="background-image: url('${imgUrl}');">
+                        <div style="position:absolute; inset:0; background:${tintColor};"></div>
+                    </div>
+                    
+                    <div class="card-badge" style="top:5px; left:5px;">${iconsHtml}</div>
+
+                    <div class="unit-info-overlay" style="padding-bottom:8px;">
+                        <div class="card-name" style="font-size:15px; margin-bottom:2px;">${cleanName}</div>
+                        <div style="font-size:10px; color:#ddd; font-weight:normal;">${shortDesc}</div>
+                    </div>
+                `;
+
+                el.onclick = () => { this.toggle(i, el); };
                 container.appendChild(el);
             }
             grid.appendChild(container);
@@ -3333,6 +4017,48 @@ const Game = {
 },
     toggle: function(i, el) {
         if (!el) el = document.getElementById(`card-${i}`);
+        
+        // [오프라인 PVP 모드 로직]
+        const diff = document.getElementById('diff-select').value;
+        if (diff === 'local') {
+            if (typeof this.pickTurn === 'undefined') this.pickTurn = 0;
+            if (!this.p1Selection) this.p1Selection = [];
+            if (!this.p2Selection) this.p2Selection = [];
+
+            const isP1 = (this.pickTurn === 0);
+            const list = isP1 ? this.p1Selection : this.p2Selection;
+            
+            // 선택 토글 로직
+            if (list.includes(i)) {
+                // 이미 선택했다면 해제
+                if (isP1) {
+                    this.p1Selection = this.p1Selection.filter(x => x !== i);
+                    el.classList.remove('selected');
+                } else {
+                    this.p2Selection = this.p2Selection.filter(x => x !== i);
+                    el.classList.remove('p2-selected');
+                }
+            } else {
+                // 선택 추가 (최대 3명)
+                if (list.length >= 3) {
+                    el.classList.add('shake');
+                    setTimeout(() => el.classList.remove('shake'), 500);
+                    return;
+                }
+                list.push(i);
+                if (isP1) el.classList.add('selected');
+                else el.classList.add('p2-selected');
+            }
+            
+            // 버튼 텍스트 갱신
+            const count = (isP1 ? this.p1Selection : this.p2Selection).length;
+            const btn = document.getElementById('btn-start');
+            btn.innerText = isP1 ? `🔴 1P 선택 (${count}/3)` : `🔵 2P 선택 (${count}/3)`;
+            btn.disabled = count !== 3; // 3명을 다 골라야 버튼 활성화
+            return;
+        }
+
+        // [기존 PVE/온라인 로직 유지]
         if (this.selected.includes(i)) {
             this.selected = this.selected.filter(x => x !== i);
             el.classList.remove('selected');
@@ -3351,8 +4077,46 @@ const Game = {
         btn.disabled = count !== 3;
     },
     randomPick: function() {
+        const diff = document.getElementById('diff-select').value;
+
+        // [A] 오프라인 1:1 (Local) 모드 전용 로직
+        if (diff === 'local') {
+            if (typeof this.pickTurn === 'undefined') this.pickTurn = 0;
+            const isP1 = (this.pickTurn === 0);
+            const cssClass = isP1 ? 'selected' : 'p2-selected';
+
+            // 1. 기존 선택 초기화 (시각적 + 데이터)
+            const currentList = isP1 ? (this.p1Selection || []) : (this.p2Selection || []);
+            currentList.forEach(idx => {
+                const el = document.getElementById(`card-${idx}`);
+                if (el) el.classList.remove(cssClass);
+            });
+
+            // 2. 데이터 배열 초기화
+            if (isP1) this.p1Selection = [];
+            else this.p2Selection = [];
+            const targetList = isP1 ? this.p1Selection : this.p2Selection;
+
+            // 3. 랜덤 3명 뽑기 (중복 없이)
+            while (targetList.length < 3) {
+                const r = Math.floor(Math.random() * 20);
+                if (!targetList.includes(r)) {
+                    targetList.push(r);
+                    const el = document.getElementById(`card-${r}`);
+                    if (el) el.classList.add(cssClass);
+                }
+            }
+
+            // 4. 버튼 텍스트 갱신
+            const btn = document.getElementById('btn-start');
+            btn.innerText = isP1 ? `🔴 1P 선택 (3/3)` : `🔵 2P 선택 (3/3)`;
+            btn.disabled = false;
+            return;
+        }
+
+        // [B] 기존 PvE / 온라인 모드 로직
         Game.selected.forEach(i => {
-            const el = document.querySelectorAll('.hero-card')[i];
+            const el = document.getElementById(`card-${i}`);
             if (el) el.classList.remove('selected');
         });
         Game.selected = [];
@@ -3360,7 +4124,7 @@ const Game = {
             const r = Math.floor(Math.random() * 20);
             if (!Game.selected.includes(r)) {
                 Game.selected.push(r);
-                const el = document.querySelectorAll('.hero-card')[r];
+                const el = document.getElementById(`card-${r}`);
                 if (el) el.classList.add('selected');
             }
         }
@@ -3371,12 +4135,15 @@ const Game = {
     checkMode: function() {
         const diff = document.getElementById('diff-select').value;
         const statusEl = document.getElementById('challenge-status');
+        
+        // [기존 로직 유지] 챌린지 모드 UI 처리
         if (diff === 'hell') {
             statusEl.style.display = 'block';
             const savedStage = localStorage.getItem('et_challenge_stage');
             let maxStage = savedStage ? parseInt(savedStage) : 0;
             if (maxStage >= ChallengeDB.length) maxStage = ChallengeDB.length - 1;
             if (this.challengeStage > maxStage) this.challengeStage = maxStage;
+            
             const select = document.getElementById('stage-select');
             select.innerHTML = '';
             ChallengeDB.forEach((st, i) => {
@@ -3392,169 +4159,261 @@ const Game = {
         } else {
             statusEl.style.display = 'none';
         }
+
+        // ============================================================
+        // [New Feature] 오프라인 PVP 모드 진입/이탈 시 '선택 초기화'
+        // ============================================================
+        const isLocal = (diff === 'local');
+        
+        // 1. 오프라인 모드로 변경했거나
+        // 2. 이미 선택된 데이터가 있는데 모드를 바꿨다면 -> 초기화
+        if (isLocal || (this.p1Selection && this.p1Selection.length > 0) || (this.p2Selection && this.p2Selection.length > 0)) {
+            
+            // 데이터 초기화
+            this.selected = [];
+            this.p1Selection = [];
+            this.p2Selection = [];
+            this.pickTurn = 0;
+            
+            // 시각적 선택 해제 (회색/파란색/흔들림 제거)
+            const cards = document.querySelectorAll('.hero-card');
+            cards.forEach(el => {
+                el.classList.remove('selected');
+                el.classList.remove('p2-selected');
+                el.classList.remove('shake');
+            });
+            
+            // 버튼 텍스트 초기화
+            const btn = document.getElementById('btn-start');
+            if (isLocal) {
+                btn.innerText = "🔴 1P 선택 (0/3)";
+            } else {
+                btn.innerText = "⚔️ 전투 시작 (0/3)";
+            }
+            btn.disabled = true;
+        }
     },
+    
+    // [유지] 챌린지 스테이지 선택 (삭제 금지!)
     selectStage: function() {
         const select = document.getElementById('stage-select');
         this.challengeStage = parseInt(select.value);
         this.updateStageInfo();
     },
+    
+    // [유지] 스테이지 정보 갱신 (삭제 금지!)
     updateStageInfo: function() {
         const stage = ChallengeDB[this.challengeStage];
         if (stage) {
             document.getElementById('stage-desc').innerText = `[${stage.name}] ${stage.desc}`;
         }
     },
-
     start: function() {
         AudioSys.init();
         AudioSys.resume();
-        // [수정] 기본 BGM을 캐논(소프트 피아노)으로 설정
         MusicEngine.play('Canon_Piano'); 
         const diffVal = document.getElementById('diff-select').value;
         this.difficulty = diffVal;
         this.mode = (diffVal === 'pvp' || diffVal === 'local') ? 'pvp' : 'pve';
 
-        this.pTeam = this.selected.map((idx, i) => {
-            const u = this.pool[idx];
-            u.id = i;
-            u.team = 0;
-            return u;
-        });
-        this.eTeam = [];
-        this.isOver = false;
-        const makeEnemy = (idx, b, e) => {
-            const u = new Unit(idx + 3, 1, b, e);
-            return u;
-        };
+        // =========================================
+        // [1] 오프라인 PVP (1:1) 모드 로직
+        // =========================================
+        if (diffVal === 'local') {
+            if (typeof this.pickTurn === 'undefined') this.pickTurn = 0;
 
-        if (this.difficulty === 'hell') {
-            if (this.challengeStage >= ChallengeDB.length) this.challengeStage = ChallengeDB.length - 1;
-            const stageData = ChallengeDB[this.challengeStage];
-
-            // [AI 강화] 덱 순서 섞기 (fixedOrder가 true면 섞지 않음)
-            // 이를 통해 '대지의 분노' 같은 콤보 덱의 순서를 보장함
-            let currentTeamList = [...stageData.team];
-            if (!stageData.fixedOrder) {
-                // 랜덤성을 위해 섞되, 원본 배열을 건드리지 않도록 복사본 사용
-                currentTeamList.sort(() => Math.random() - 0.5);
+            // [단계 A] 1P 선택 완료 시점 -> 2P 턴으로 넘기기
+            if (this.pickTurn === 0) {
+                this.pickTurn = 1; // 턴 넘김
+                alert("🔴 1P 선택 완료!\n🔵 2P(파란팀)가 선택할 차례입니다.\n(중복 선택이 가능합니다)");
+                
+                // 1P가 고른 카드들의 '선택됨(회색)' 표시 제거 -> 2P가 다시 고를 수 있게 함
+                const cards = document.querySelectorAll('.hero-card');
+                cards.forEach(c => c.classList.remove('selected'));
+                
+                // 버튼 텍스트 변경
+                const btn = document.getElementById('btn-start');
+                btn.innerText = "🔵 2P 선택 (0/3)";
+                btn.disabled = true;
+                
+                // 여기서 함수 종료 (게임을 시작하지 않고 2P 입력을 기다림)
+                return;
             }
-
-            this.eTeam = currentTeamList.map((key, i) => {
-                let b, e;
-                if (key === 'Normal') {
-                    b = 'Normal';
-                    e = null;
-                } else if (key.includes('-')) {
-                    [b, e] = key.split('-');
-                } else {
-                    b = key;
-                    e = null;
-                }
-                return makeEnemy(i, b, e);
+            
+            // [단계 B] 2P 선택 완료 시점 -> 실제 게임 데이터 생성
+            // 1P 팀 생성
+            this.pTeam = (this.p1Selection || []).map((idx, i) => {
+                const u = this.pool[idx];
+                return new Unit(i, 0, u.base, u.extra);
             });
-        } else if (this.difficulty === 'mirror') {
-            this.eTeam = this.pTeam.map((pu, i) => {
-                const u = new Unit(i + 3, 1, pu.base, pu.extra);
-                u.maxHp = Math.floor(u.maxHp * 1.15);
-                u.hp = u.maxHp;
-                u.atk = Math.floor(u.atk * 1.15);
+            // 2P 팀 생성 (중복 픽 허용됨, 팀 ID 1)
+            this.eTeam = (this.p2Selection || []).map((idx, i) => {
+                const u = this.pool[idx];
+                return new Unit(i + 3, 1, u.base, u.extra);
+            });
+            
+            // 다음 판을 위해 픽 변수 초기화
+            this.pickTurn = 0; 
+            this.p1Selection = [];
+            this.p2Selection = [];
+
+        } else {
+            // =========================================
+            // [2] 기존 PVE (AI 대전) 로직
+            // =========================================
+            this.pTeam = this.selected.map((idx, i) => {
+                const u = this.pool[idx];
+                u.id = i;
+                u.team = 0;
                 return u;
             });
-        } else if (this.difficulty === 'easy') {
-            const basics = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'];
-            while (this.eTeam.length < 3) {
-                const b = basics[Math.floor(Math.random() * basics.length)];
-                if (!this.eTeam.some(u => u.base === b)) {
-                    this.eTeam.push(makeEnemy(this.eTeam.length, b, null));
+            this.eTeam = [];
+            const makeEnemy = (idx, b, e) => {
+                return new Unit(idx + 3, 1, b, e);
+            };
+
+            if (this.difficulty === 'hell') {
+                if (this.challengeStage >= ChallengeDB.length) this.challengeStage = ChallengeDB.length - 1;
+                const stageData = ChallengeDB[this.challengeStage];
+                let currentTeamList = [...stageData.team];
+                if (!stageData.fixedOrder) {
+                    currentTeamList.sort(() => Math.random() - 0.5);
                 }
-            }
-        } else if (this.difficulty === 'hard') {
-            let bestIdx = Math.floor(Math.random() * ChallengeDB.length);
-            let maxScore = -999;
-            ChallengeDB.forEach((stage, idx) => {
-                let score = 0;
-                stage.team.forEach(key => {
-                    let b, e, isN = false,
-                        isEnh = false;
-                    if (key === 'Normal') {
-                        b = 'Normal';
-                        isN = true;
-                    } else {
-                        const parts = key.split('-');
-                        b = parts[0];
-                        e = parts[1] || null;
-                        if (b === e) isEnh = true;
-                    }
-                    const dumE = {
-                        base: b,
-                        extra: e,
-                        isNormal: isN,
-                        isEnhanced: isEnh
-                    };
-                    this.pTeam.forEach(p => {
-                        const atkRel = this.calc(dumE, p);
-                        if (atkRel.v > 1.0) score += 3;
-                        const defRel = this.calc(p, dumE);
-                        if (defRel.v < 1.0) score += 2;
-                    });
+                this.eTeam = currentTeamList.map((key, i) => {
+                    let b, e;
+                    if (key === 'Normal') { b = 'Normal'; e = null; } 
+                    else if (key.includes('-')) { [b, e] = key.split('-'); } 
+                    else { b = key; e = null; }
+                    return makeEnemy(i, b, e);
                 });
-                score += Math.random();
-                if (score > maxScore) {
-                    maxScore = score;
-                    bestIdx = idx;
+            } else if (this.difficulty === 'mirror') {
+                this.eTeam = this.pTeam.map((pu, i) => {
+                    const u = new Unit(i + 3, 1, pu.base, pu.extra);
+                    u.maxHp = Math.floor(u.maxHp * 1.15);
+                    u.hp = u.maxHp;
+                    u.atk = Math.floor(u.atk * 1.15);
+                    return u;
+                });
+            } else if (this.difficulty === 'easy') {
+                const basics = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'];
+                while (this.eTeam.length < 3) {
+                    const b = basics[Math.floor(Math.random() * basics.length)];
+                    if (!this.eTeam.some(u => u.base === b)) {
+                        this.eTeam.push(makeEnemy(this.eTeam.length, b, null));
+                    }
                 }
-            });
-            const targetDeck = ChallengeDB[bestIdx].team;
-            this.eTeam = targetDeck.map((key, i) => {
-                let b, e;
-                if (key === 'Normal') {
-                    b = 'Normal';
-                    e = null;
-                } else if (key.includes('-')) {
-                    [b, e] = key.split('-');
-                } else {
-                    b = key;
-                    e = null;
-                }
-                return makeEnemy(i, b, e);
-            });
-            this.log(`<span class='log-sys'>🔥 어려움(Counter): 적이 당신의 약점을 간파했습니다! (${ChallengeDB[bestIdx].name})</span>`);
-        } else {
-            const used = new Set();
-            while (this.eTeam.length < 3) {
-                const b = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'][Math.floor(Math.random() * 7)];
-                const e = [null, 'Light', 'Dark'][Math.floor(Math.random() * 3)];
-                if (b === 'Dark' && e === 'Light') continue;
-                let key = `${b}-${e}`;
-                if (b === 'Light' && e === 'Dark') key = 'Normal';
-                if (!used.has(key)) {
-                    used.add(key);
-                    this.eTeam.push(makeEnemy(this.eTeam.length, b, e));
+            } else if (this.difficulty === 'hard') {
+                // 🟢 [수정] 하드모드: 플레이어 덱을 분석하여 카운터(유리한) 덱 선정
+                const pDeck = this.pTeam;
+                const advMap = {
+                    'Fire': ['Metal', 'Tree'], 'Water': ['Fire', 'Metal'], 'Tree': ['Water', 'Earth'],
+                    'Metal': ['Tree', 'Earth'], 'Earth': ['Fire', 'Water'],
+                    'Light': ['Dark'], 'Dark': ['Light'],
+                    'Light-Light': ['Dark', 'Dark-Dark'], 'Dark-Dark': ['Light', 'Light-Light'],
+                    'Fire-Light': ['Metal', 'Tree', 'Dark'], 'Fire-Dark': ['Metal', 'Tree', 'Light']
+                };
+
+                let bestIdx = 0;
+                let maxScore = -999;
+
+                // ChallengeDB(검증된 덱들) 중에서 가장 유리한 덱을 탐색
+                ChallengeDB.forEach((stage, idx) => {
+                    let score = 0;
+                    stage.team.forEach(eKey => {
+                        const eBase = eKey.split('-')[0];
+                        pDeck.forEach(pUnit => {
+                            const pBase = pUnit.base;
+                            // 적이 플레이어에게 강하면 +1점 (카운터)
+                            if (advMap[eBase] && advMap[eBase].includes(pBase)) score += 1.5;
+                            // 적이 플레이어에게 약하면 -1점
+                            if (advMap[pBase] && advMap[pBase].includes(eBase)) score -= 1.0;
+                        });
+                    });
+
+                    // 점수가 높거나, 같으면 50% 확률로 교체 (매번 같은 덱 방지)
+                    if (score > maxScore || (score === maxScore && Math.random() < 0.5)) {
+                        maxScore = score;
+                        bestIdx = idx;
+                    }
+                });
+
+                const targetDeck = ChallengeDB[bestIdx].team;
+                this.eTeam = targetDeck.map((key, i) => {
+                    let b, e;
+                    if (key === 'Normal') { b = 'Normal'; e = null; } 
+                    else if (key.includes('-')) { [b, e] = key.split('-'); } 
+                    else { b = key; e = null; }
+                    
+                    const u = makeEnemy(i, b, e);
+                    // [하드 보정] 공격력 1.1배, 체력 1.1배
+                    u.atk = Math.floor(u.atk * 1.1);
+                    u.maxHp = Math.floor(u.maxHp * 1.1);
+                    u.hp = u.maxHp;
+                    return u;
+                });
+                
+                this.log(`<span class='log-sys' style="color:red;">🔥 Hard Mode: 적이 당신의 약점을 공략합니다! (${ChallengeDB[bestIdx].name})</span>`);
+            } else {
+                const used = new Set();
+                while (this.eTeam.length < 3) {
+                    const b = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'][Math.floor(Math.random() * 7)];
+                    const e = [null, 'Light', 'Dark'][Math.floor(Math.random() * 3)];
+                    if (b === 'Dark' && e === 'Light') continue;
+                    let key = `${b}-${e}`;
+                    if (b === 'Light' && e === 'Dark') key = 'Normal';
+                    if (!used.has(key)) {
+                        used.add(key);
+                        this.eTeam.push(makeEnemy(this.eTeam.length, b, e));
+                    }
                 }
             }
         }
 
+        // =========================================
+        // [3] 공통 초기화 (화면 전환, 로그, 턴 설정)
+        // =========================================
+        this.isOver = false;
         this.queue = [0, 1, 2, 3, 4, 5];
-        this.curr = Math.floor(Math.random() * 6);
+        
+        // [Fix] 온라인 모드 동기화: 초기 턴 순서도 시드 기반 RNG 사용
+        if (typeof isOnlineMode !== 'undefined' && isOnlineMode && typeof globalRNG !== 'undefined' && globalRNG) {
+            this.curr = Math.floor(globalRNG.next() * 6);
+        } else {
+            this.curr = Math.floor(Math.random() * 6);
+        }
+        
         this.turnCount = 1;
         this.isProcessing = false;
+        
         document.getElementById('selection-screen').style.display = 'none';
         document.getElementById('battle-screen').style.display = 'flex';
         document.getElementById('logs').innerHTML = '';
+        
         let diffText = this.difficulty === 'mirror' ? '🪞 거울 전쟁' : (this.difficulty === 'hell' ? `🏆 챌린지 ${this.challengeStage+1}` : this.difficulty);
+        if (this.difficulty === 'local') diffText = '📴 오프라인 1:1';
+        
         this.log(`<span class='log-sys'>✨ 전투 시작! [${diffText}] (3vs3)</span>`);
 
-        // [선/후공 보정] 후공 팀에게 면역 부여
-        // queue[curr]이 선공의 첫 턴 인덱스.
-        // 만약 queue[curr]이 0,2,4 중 하나면 P팀이 선공 -> E팀(1)에게 면역
-        // 만약 queue[curr]이 1,3,5 중 하나면 E팀이 선공 -> P팀(0)에게 면역
+        // [중요] 선/후공 보정 로직 (누락되었던 부분)
         const firstTurnUnitId = (this.queue[this.curr] % 2 === 0 ? this.queue[this.curr] / 2 : (this.queue[this.curr] - 1) / 2 + 3);
         const firstTurnTeam = this.queue[this.curr] % 2; // 0 (P팀) or 1 (E팀)
         const secondTeam = firstTurnTeam === 0 ? this.eTeam : this.pTeam;
 
-        secondTeam.forEach(u => u.addStatus('START_IMMUNITY', 99, 0, null, true));
-        this.log(`<span class='log-sys'>🛡️ 후공 팀(${firstTurnTeam===0?'적군':'아군'})에게 첫 행동 전까지 면역 부여!</span>`);
+        // [밸런스 패치] 후공 팀 보정: 면역 부여 (생존력)
+        secondTeam.forEach(u => {
+            u.addStatus('START_IMMUNITY', 99, 0, null, true);
+            // 쉴드 +100 삭제됨
+        });
 
+        // [신규] 후공 첫 번째 캐릭터(선봉)에게만 '1턴간 데미지 10% 증가' 부여 (반격 능력)
+        if (secondTeam.length > 0) {
+            secondTeam[0].addStatus('DMG_UP_10', 1, 0, null, true);
+        }
+        
+        const teamName = firstTurnTeam === 0 ? '적군(후공)' : '아군(후공)';
+        this.log(`<span class='log-sys' style='color:#7986cb;'>🛡️ [후공 보정] ${teamName}에게 면역 및 <b>선봉 딜러 강화(+10%)</b> 적용!</span>`);
+
+        // [중요] 게임 루프 시작 (누락되었던 부분)
         this.render();
         this.timer = setTimeout(() => this.turn(), 1000);
     },
@@ -3582,8 +4441,15 @@ turn: function() {
         const round = Math.ceil(this.turnCount / 6);
         const tVal = this.queue[this.curr];
         
-        // 1. 유닛 정의 (기존 찌꺼기 오류 해결됨) - 정수 변환 추가
+        // [Fix] 유닛 정의 및 null/undefined 체크 강화
         const u = tVal % 2 === 0 ? this.pTeam[Math.floor(tVal / 2)] : this.eTeam[Math.floor((tVal - 1) / 2)];
+        
+        // [Fix] 유닛이 존재하지 않거나 이미 죽었으면 즉시 턴 종료
+        if (!u || u.isDead) {
+            console.error('❌ Turn error: Unit not found or dead', { tVal, u });
+            this.endTurn(true);
+            return;
+        }
 
         // 2. [로직 삭제됨] 즉시 제어권 탈취 방식으로 변경되어, 사전 준비(MC_READY) 단계가 불필요합니다.
         // (이곳에 있던 문법 오류 및 구버전 로직을 삭제했습니다.)
@@ -3609,23 +4475,31 @@ turn: function() {
         // 4. AI 감시자 (Watchdog) 및 종료 체크
         if (this.watchdog) clearTimeout(this.watchdog);
         if (!isMyTurn && !isOnlineMode && this.difficulty !== 'local') {
+            // 오프라인 AI전일 때만 강제 턴 넘김 가동
             this.watchdog = setTimeout(() => {
                 console.log("AI Stuck. Forcing next.");
                 this.endTurn();
-            }, 3000);
+            }, 4000); // 3초 -> 4초로 여유 확보
+        } else if (isOnlineMode) {
+            // [Fix] 온라인 모드에서는 클라이언트가 임의로 턴을 넘기지 않도록 확실히 해제
+            if (this.watchdog) clearTimeout(this.watchdog);
         }
         if (this.endCheck()) return;
 
-        // 5. [수정] 턴 시작 상태이상 처리 (도트 데미지 -> 사망 체크 -> CC 체크)
+        // 5. [수정] 턴 시작 직후 도트 데미지 적용 (가장 먼저 실행)
         if (!u.isDead) {
             u.resetTurn();
             
-            // 5-1. 도트 데미지 처리 (맹독, 화상 등)
+            // [중요] 도트 데미지(독, 화상) 적용 시점
             const dotLogs = u.tickStatus();
             dotLogs.forEach(log => this.log(log));
             
-            // 도트 데미지로 사망 시 턴 종료
+            // ✅ [Fix] 도트 데미지가 발생했다면 즉시 화면(체력바)을 갱신합니다.
+            if (dotLogs.length > 0) this.render();
+            
+            // 만약 도트 데미지로 사망했다면, 아무 행동도 못하고 턴 종료
             if (u.isDead) {
+                this.log(`<span class='log-crit'>☠️ [${u.name}] 턴 시작과 동시에 쓰러졌습니다!</span>`);
                 this.endTurn(true);
                 return;
             }
@@ -3644,27 +4518,26 @@ turn: function() {
         // 5-2. 행동 불가(CC) 체크 (우선순위: 사망 > 기절/빙결 > 세뇌)
         const hasCC = u.hasStatus('STUN') || u.hasStatus('FREEZE') || u.hasStatus('SLEEP');
         
-        // [수정] 세뇌 대기 중이어도 기절하면 턴을 날려야 함 (세뇌 불발 처리)
         if (hasCC) {
             UI.floatText(u, "행동불가", "ft-miss");
             this.log(`<span class='log-crit'>🚫 [${u.name}] 상태이상으로 행동할 수 없습니다.</span>`);
             
-            // 기절로 인해 세뇌 타이밍을 놓쳤다면 예약 취소
+            // [Fix] 세뇌 예약(MC_WAIT) 중 기절 시 예약 취소
             if (u.hasStatus('MC_WAIT')) {
                 u.status = u.status.filter(s => s.type !== 'MC_WAIT');
                 this.log(`<span class='log-sys'>🌀 [${u.name}] 기절하여 정신 지배가 불발되었습니다.</span>`);
             }
             
-            setTimeout(() => this.endTurn(), 1000);
+            // [Fix] 이미 조종 중(세뇌 상태)일 때 기절하면, 턴 꼬임 방지를 위해 중복 실행 차단 후 턴 종료
+            this.isProcessing = true; 
+            setTimeout(() => {
+                this.isProcessing = false; // 타임아웃 후 해제
+                this.endTurn();
+            }, 1000);
             return;
         }
         
         // (여기 있던 중복 코드들을 깨끗이 지웠습니다)
-
-        if (u.isDead) {
-            this.endTurn(true);
-            return;
-        }
 
         if (u.isDead) {
             this.endTurn(true);
@@ -3767,28 +4640,18 @@ turn: function() {
     },
 
     render: function() {
-        const tl = document.getElementById('tl-track');
-        tl.innerHTML = '';
-        for (let i = 0; i < 6; i++) {
-            const idx = (this.curr + i) % 6;
-            const qId = this.queue[idx];
-            const isP = qId % 2 === 0;
-            const uIdx = isP ? Math.floor(qId / 2) : Math.floor((qId - 1) / 2);
-            const team = isP ? this.pTeam : this.eTeam;
-            const u = team[uIdx];
-            if (!u) continue; // null 체크 추가
-            const n = document.createElement('div');
-            n.className = `tl-node ${isP?'ally':'enemy'} ${i===0?'curr':''}`;
-            if (u.isDead) n.style.opacity = 0.3;
-            n.innerText = SKILL_DB[u.getKey()].icon || ATTR[u.base].i;
-            tl.appendChild(n);
-        }
+        // [수정 완료] 타임라인 코드 완전 제거됨
+        
+        // 1. 유닛 그리기
         const draw = (rowId, team, tid) => {
             const row = document.getElementById(rowId);
+            if (!row) return;
+
             const currentIds = team.map(u => u.id);
             Array.from(row.children).forEach(c => {
                 if (!currentIds.includes(parseInt(c.dataset.uid))) c.remove();
             });
+            
             team.forEach((u) => {
                 const cardId = tid === 0 ? `p-card-${u.id}` : `e-card-${u.id}`;
                 let d = document.getElementById(cardId);
@@ -3798,135 +4661,177 @@ turn: function() {
                     d.dataset.uid = u.id;
                     row.appendChild(d);
                 }
+                
                 let isActive = false;
                 if (tid === 0) isActive = this.queue[this.curr] === u.id * 2;
                 else isActive = this.queue[this.curr] === (u.id - 3) * 2 + 1;
-                const role = SKILL_DB[u.getKey()].role || 'nuker';
                 
+                const role = SKILL_DB[u.getKey()].role || 'nuker';
                 d.className = `unit role-${role} ${u.isSuper ? 'super-hero' : ''} ${u.isDead?'dead':''} ${isActive?'active-turn':''} ${tid===1?'target-enemy':''} ${tid===0?'target-ally':''}`;
 
-                // [툴팁 & 감정표현 로직 통합]
-                d.onmousedown = (e) => {
-                    if (d.classList.contains('target-enemy') || d.classList.contains('target-ally')) return;
-                    d.pressTimer = setTimeout(() => UI.showTooltip(u, d), 500);
-                };
-                d.onmouseup = () => { clearTimeout(d.pressTimer); UI.hideTooltip(); };
-                d.onmouseleave = () => { 
-                    clearTimeout(d.pressTimer); UI.hideTooltip();
-                    // 미리보기 제거
-                    const p = d.querySelector('.hp-preview');
-                    if(p) p.remove();
-                };
-                d.ontouchstart = (e) => {
-                    if (d.classList.contains('target-enemy') || d.classList.contains('target-ally')) return;
-                    d.pressTimer = setTimeout(() => UI.showTooltip(u, d), 500);
-                };
-                d.ontouchend = () => { clearTimeout(d.pressTimer); UI.hideTooltip(); };
-
-                // [신규] 클릭 시 감정표현 메뉴 (스킬 선택 중이 아닐 때만)
+                // 이벤트 연결
                 d.onclick = (e) => {
-                    if (Game.selectedSkillIdx !== -1) return; // 타겟팅 중이면 무시
-                    if (u.team === 0) { // 내 유닛만
-                        UI.showEmoteMenu(u, d);
-                        e.stopPropagation();
-                    }
+                    if (Game.selectedSkillIdx !== -1) return;
+                    if (u.team === 0) { UI.showEmoteMenu(u, d); e.stopPropagation(); }
                 };
 
-                // [신규] 마우스 오버 시 데미지 미리보기
+                // [신규] 모바일 2초 롱터치 구현
+                let longPressTimer = null;
+                let isTouching = false; // 터치 중인지 확인하는 플래그
+
+                d.ontouchstart = () => {
+                    isTouching = true;
+                    longPressTimer = setTimeout(() => {
+                        UI.showTooltip(u, d); // 2초 유지 시 툴팁 표시
+                    }, 2000);
+                };
+
+                d.ontouchend = () => {
+                    if (longPressTimer) clearTimeout(longPressTimer); // 손 떼면 타이머 취소
+                    setTimeout(() => isTouching = false, 500); // 플래그 해제 지연 (마우스엔터 방지)
+                };
+
+                d.ontouchmove = () => {
+                    if (longPressTimer) clearTimeout(longPressTimer); // 스크롤 시 타이머 취소
+                };
+
                 d.onmouseenter = () => {
-                    // 스킬 선택 중이고 + 적군이며 + 내가 조작 중일 때
-                    if (Game.selectedSkillIdx !== -1 && tid !== 0 && !Game.isProcessing) {
-                        const pred = Game.predictDmg(u);
-                        if (pred > 0) {
+                     // [수정] 터치(탭) 동작 중일 때는 즉시 툴팁 표시를 막음
+                     if (isTouching) return;
+
+                     if (Game.selectedSkillIdx !== -1 && tid !== 0 && !Game.isProcessing) {
+                         const pred = Game.predictDmg(u);
+                         if (pred > 0) {
                             const bar = d.querySelector('.status-bar');
                             if (bar) {
                                 const preview = document.createElement('div');
                                 preview.className = 'hp-preview';
-                                // 체력바 비율 계산
-                                const widthPct = Math.min(100, (pred / u.maxHp) * 100);
-                                preview.style.width = widthPct + '%';
+                                const currentHpPct = (u.hp / u.maxHp) * 100;
+                                const dmgPct = Math.min(currentHpPct, (pred / u.maxHp) * 100);
+                                preview.style.left = Math.max(0, currentHpPct - dmgPct) + '%';
+                                preview.style.width = dmgPct + '%';
                                 bar.appendChild(preview);
                             }
                         }
-                    }
+                     }
+                     UI.showTooltip(u, d);
                 };
 
+                d.onmouseleave = () => { 
+                    UI.hideTooltip(); 
+                    const p = d.querySelector('.hp-preview'); 
+                    if(p) p.remove(); 
+                    if(longPressTimer) clearTimeout(longPressTimer); 
+                };
+
+                // 상태이상 태그 생성
                 let tags = u.status.map(s => {
                     let c = 'tag';
-                    const map = {
-                        'POISON': 'poison', 'FREEZE': 'freeze', 'SILENCE': 'silence',
-                        'EVADE': 'evade', 'BURN': 'burn', 'BANISH': 'banish',
-                        'TRAP': 'trap', 'BIND': 'bind', 'GROWTH': 'growth',
-                        'ATK_DOWN': 'atkdown', 'BLIND': 'blind', 'IMMUNITY': 'immunity',
-                        'HEAL_DOWN': 'healdown', 'LIGHT_MIGHT': 'atkup', 'LIFESTEAL_BUFF': 'lifesteal',
-                        'ATK_BUFF_SMALL': 'atkup_s', 'START_IMMUNITY': 'start-immunity',
-                        'MC_WAIT': 'mc-wait', 'MC_READY': 'mc-ready'
-                    };
+                    const map = {'POISON':'poison','FREEZE':'freeze','SILENCE':'silence','EVADE':'evade','BURN':'burn','BANISH':'banish','TRAP':'trap','BIND':'bind','GROWTH':'growth','ATK_DOWN':'atkdown','BLIND':'blind','IMMUNITY':'immunity','HEAL_DOWN':'healdown','LIGHT_MIGHT':'atkup','LIFESTEAL_BUFF':'lifesteal','ATK_BUFF_SMALL':'atkup_s','START_IMMUNITY':'start-immunity','ROOT_GUARD':'bind','MC_WAIT':'mc-wait','MC_READY':'mc-ready','EARTH_RECOIL':'atkdown'};
                     if (s.type.includes('PROVOKED')) c += ' taunt';
                     else if (s.type.startsWith('KARMA_VICTIM')) c += ' karma';
                     else if (map[s.type]) c += ` ${map[s.type]}`;
-                    let txt = s.type;
-                    const tMap = {
-                        'POISON': '독', 'FREEZE': '빙결', 'SILENCE': '침묵', 'DMG_RED': '방어↑',
-                        'EVADE': '회피', 'BURN': '화상', 'TRAP': '속박', 'BANISH': '추방',
-                        'BIND': '결속', 'GROWTH': '성장', 'ATK_DOWN': '공격↓', 'BLIND': '실명',
-                        'IMMUNITY': '면역', 'HEAL_DOWN': '치유↓', 'LIGHT_MIGHT': '공격↑',
-                        'LIFESTEAL_BUFF': '🩸흡혈', 'ATK_BUFF_SMALL': '🔥공격↑', 'START_IMMUNITY': '🛡️선공방어',
-                        'MC_WAIT': '🌀세뇌중...', 'MC_READY': '🧠조종가능'
-                    };
-                    if (s.type.includes('PROVOKED')) txt = '도발';
-                    else if (s.type.startsWith('KARMA_VICTIM')) txt = '👁️업보';
-                    else if (tMap[s.type]) txt = tMap[s.type];
-                    return `<span class="${c}">${txt}(${s.turn})</span>`;
+
+                // [수정] 치유 감소 수치별 클래스 및 텍스트 적용
+                if (s.type === 'HEAL_DOWN') {
+                    if (s.val <= 20) c += ' heal-20';       // 독가스(보라)
+                    else if (s.val <= 50) c += ' heal-50';  // 모래지옥(주황)
+                    else c += ' heal-critical';             // 중첩됨(빨강)
+                }
+
+                let txt = s.type;
+                const tMap = {'POISON':'독','FREEZE':'빙결','SILENCE':'침묵','DMG_RED':'방어↑','EVADE':'회피','BURN':'화상','TRAP':'속박','BANISH':'추방','BIND':'결속','GROWTH':'성장','ATK_DOWN':'공격↓','BLIND':'실명','IMMUNITY':'면역','HEAL_DOWN':`💔-${s.val}%`,'LIGHT_MIGHT':'공격↑','LIFESTEAL_BUFF':'🩸흡혈','ATK_BUFF_SMALL':'🔥공격↑','START_IMMUNITY':'🛡️선공방어','ROOT_GUARD':'🪵수호','MC_WAIT':'🌀세뇌중','MC_READY':'🧠조종','EARTH_RECOIL':'💔반동'};
+
+                if (s.type.includes('PROVOKED')) txt = '도발';
+                else if (s.type.startsWith('KARMA_VICTIM')) txt = '👁️업보';
+                else if (tMap[s.type]) txt = tMap[s.type];
+
+                    if (s.turn < 90) txt += ` <b style="font-family:sans-serif; margin-left:1px;">${s.turn}</b>`;
+                    return `<span class="${c}">${txt}</span>`;
                 }).join('');
-                if (u.linkedAllyId !== -1) tags += `<span class="tag bind" style="background:#27ae60; border:1px solid #fff;">🔗Link</span>`;
-                let bgClass = `bg-${u.base}`;
-                if (u.isEnhanced) bgClass = `bg-${u.base}-Enhanced`;
-                if (u.isNormal) bgClass = 'bg-Normal';
-                const icon = SKILL_DB[u.getKey()].icon || '';
-                let extraBadge = '';
-                if (u.elecStacks > 0) extraBadge = `<div class="elec-badge">⚡${u.elecStacks}</div>`;
+
+                if (u.linkedAllyId !== -1) tags += `<span class="tag bind" style="background:#27ae60;">🔗Link</span>`;
+
+                const key = u.getKey();
+                const imgUrl = IMAGE_DB[key] || IMAGE_DB['Default'];
+                
+                const hpPct = (u.hp / u.maxHp) * 100;
+                let hpColor = '#66bb6a';
+                if (hpPct <= 25) hpColor = '#ef5350';
+                else if (hpPct <= 50) hpColor = '#ffb74d';
 
                 let displayName = u.name.split(' ')[0];
                 if (u.isSuper) {
                     const emo = EMOTION_DB[u.getKey()];
-                    // 1. 감정 DB에 있고, 해금된 상태라면 타이틀 표시
-                    if (emo) {
-                        displayName = `[${emo.t}] ${displayName}`;
-                    } else {
-                        // 2. 예외 처리 (기존 로직)
-                        if (role === 'nuker') displayName = `👹God ${displayName}`;
-                        else if (role === 'tank') displayName = `🛡️Lord ${displayName}`;
-                        else if (role === 'supp') displayName = `😇Saint ${displayName}`;
+                    if (emo) displayName = `[${emo.t}] ${displayName}`;
+                }
+
+                let iconsHtml = '';
+                if (ATTR[u.base]) iconsHtml += `<div class="tiny-icon">${ATTR[u.base].i}</div>`;
+                if (u.extra && ATTR[u.extra]) iconsHtml += `<div class="tiny-icon">${ATTR[u.extra].i}</div>`;
+                if (iconsHtml === '' && SKILL_DB[key]) iconsHtml = `<div class="tiny-icon">${SKILL_DB[key].icon}</div>`;
+
+                // [신규] 상성 표시기 로직
+                // 현재 턴을 잡은 유닛(공격자)이 누구인지 확인
+                const tVal = this.queue[this.curr];
+                const activeUnit = (tVal !== undefined) ? (tVal % 2 === 0 ? this.pTeam[Math.floor(tVal / 2)] : this.eTeam[Math.floor((tVal - 1) / 2)]) : null;
+                
+                let matchupBadge = '';
+                // 조건: 현재 내 턴(activeUnit.team === 0)이고, 그리는 대상이 적(u.team === 1)일 때
+                if (activeUnit && activeUnit.team === 0 && u.team === 1 && !u.isDead) {
+                    const sim = this.calc(activeUnit, u);
+                    if (sim.v > 1.0) { // 유리함 (1.2배 이상)
+                        // [재수정] 우측은 번개스택(⚡)과 겹칠 위험이 있어, 좌측 속성 아이콘 아래(top:34px)로 이동
+                        matchupBadge = `<div style="position:absolute; top:34px; left:4px; background:#00e676; color:#004d40; font-size:10px; padding:2px 6px; border-radius:10px; font-weight:900; z-index:20; box-shadow:0 2px 4px rgba(0,0,0,0.3); border:2px solid #fff; animation: jelly-bounce 1s infinite;">⚡약점</div>`;
+                    } else if (sim.v < 1.0) { // 불리함 (0.8배 이하)
+                        // [재수정] 우측은 번개스택(⚡)과 겹칠 위험이 있어, 좌측 속성 아이콘 아래(top:34px)로 이동
+                        matchupBadge = `<div style="position:absolute; top:34px; left:4px; background:#ff5252; color:#fff; font-size:10px; padding:2px 6px; border-radius:10px; font-weight:900; z-index:20; box-shadow:0 2px 4px rgba(0,0,0,0.3); border:2px solid #fff;">🛡️저항</div>`;
                     }
                 }
 
-                // [신규] 동적 체력바 색상 (Dynamic HP Color)
-                const hpPct = (u.hp / u.maxHp) * 100;
-                let hpColor = '#66bb6a'; // Green (Safe)
-                if (hpPct <= 25) hpColor = '#ef5350'; // Red (Danger)
-                else if (hpPct <= 50) hpColor = '#ffb74d'; // Orange (Warning)
-
-                // [UI] 상성 아이콘 계산 (추가된 코드)
-                let affInd = '';
-                if (this.turnChar && this.turnChar !== u && this.turnChar.team !== u.team) {
-                    const aff = Common.calc(this.turnChar, u);
-                    if (aff.v > 1.1) affInd = ' <span style="color:red; font-size:12px;">🔺</span>'; // 약점
-                    else if (aff.v < 0.9) affInd = ' <span style="color:gray; font-size:12px;">🛡️</span>'; // 저항
-                }
-
-                // 템플릿 리터럴에 ${affInd} 추가
-                const innerHTML = ` ${extraBadge} <div class="tag-container">${tags}</div> <div class="attr-icon ${bgClass}">${icon || ATTR[u.base].i}<div class="mini-attr-box"><div class="mini-icon">${ATTR[u.base].i}</div>${u.extra ? `<div class="mini-icon">${ATTR[u.extra].i}</div>` : ''}</div></div> <div class="unit-name" style="font-size:15px; margin-bottom:3px; ${u.isSuper ? 'color:#fbc02d; text-shadow:0 0 5px rgba(255,235,59,0.5);' : ''}">${displayName} <span class="atk-text">⚔️${u.getAtk()}</span></div> <div class="status-bar" style="height:14px;"><div class="hp-fill" style="width:${hpPct}%; background:${hpColor};"></div><div class="shield-fill" style="width:${(u.shield/u.maxHp)*100}%"></div></div> <div style="font-size:12px; margin-top:3px; color:#777; font-weight:bold;">${u.hp}${u.shield>0?` (+${u.shield})`:''}</div> `;
+                // [체력바 UI 변경 핵심 부분] + 상성 뱃지(${matchupBadge}) 추가됨
+                const innerHTML = `
+                    <div class="unit-img-bg" style="background-image: url('${imgUrl}');">
+                        <div style="position:absolute; inset:0; background:${'transparent'};"></div>
+                    </div>
+                    ${matchupBadge} 
+                    <div class="card-badge">${iconsHtml}</div>
+                    <div class="card-atk">⚔️ ${u.getAtk()}</div>
+                ${u.elecStacks > 0 ? `<div class="elec-badge" style="top:30px;">⚡${u.elecStacks}</div>` : ''}
+                ${u.treeStack > 0 ? `<div class="tree-badge" style="top:30px;">🌳${u.treeStack}</div>` : ''}
+                <div class="tag-container">${tags}</div>
+                    <div class="unit-info-overlay">
+                        <div class="card-name" style="${u.isSuper ? 'color:#ffd700;' : ''}">${displayName}</div>
+                        <div class="status-bar">
+                            <div class="hp-fill" style="width:${hpPct}%; background:${hpColor};"></div>
+                            <div class="shield-fill" style="width:${Math.min(100, (u.shield/u.maxHp)*100)}%"></div>
+                        </div>
+                        <div style="font-size:11px; font-weight:bold; text-align:right; color:#fff; text-shadow:1px 1px 1px rgba(0,0,0,0.8); margin-top:2px; letter-spacing:0.5px;">
+                            ${u.hp} / ${u.maxHp} ${u.shield > 0 ? `<span style="color:#e1bee7;">(+${u.shield})</span>` : ''}
+                        </div>
+                    </div>
+                `;
+                
                 if (d.innerHTML !== innerHTML) d.innerHTML = innerHTML;
             });
         };
+
         draw('player-row', this.pTeam, 0);
         draw('enemy-row', this.eTeam, 1);
     },
 
 endTurn: function(isFast = false) {
         if (this.isOver) return;
-        if (this.watchdog) clearTimeout(this.watchdog);
+        
+        // [Fix] 타이머 누적 방지 - 모든 타이머 명시적으로 정리
+        if (this.timer) {
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+        if (this.watchdog) {
+            clearTimeout(this.watchdog);
+            this.watchdog = null;
+        }
         
         // 현재 턴 주인 유닛 찾기
         const tVal = this.queue[this.curr];
@@ -3958,7 +4863,7 @@ endTurn: function(isFast = false) {
         // 데스매치 로직
         if (this.curr === 0) {
             const round = Math.ceil(this.turnCount / 6);
-            if (round > 20) {
+            if (round > 15) {
                 [...this.pTeam, ...this.eTeam].forEach(u => {
                     if (!u.isDead) u.atk += 10;
                 });
@@ -4066,13 +4971,19 @@ endTurn: function(isFast = false) {
     },
 
     reset: function() {
-        // [수정] 강제 종료 킬 스위치 가동
+        // [Fix] 강제 종료 킬 스위치 가동
         this.isOver = true; // 진행 중인 로직이 즉시 멈추도록 플래그 설정
         this.isProcessing = false;
 
-        // 타이머 제거
-        if (this.timer) { clearTimeout(this.timer); this.timer = null; }
-        if (this.watchdog) { clearTimeout(this.watchdog); this.watchdog = null; }
+        // [Fix] 타이머 완전 정리 - 모든 타이머 명시적으로 정리
+        if (this.timer) { 
+            clearTimeout(this.timer); 
+            this.timer = null; 
+        }
+        if (this.watchdog) { 
+            clearTimeout(this.watchdog); 
+            this.watchdog = null; 
+        }
 
         // 오디오 정리
         MusicEngine.stop();
@@ -4083,25 +4994,27 @@ endTurn: function(isFast = false) {
         document.getElementById('selection-screen').style.display = 'flex';
         document.querySelectorAll('.hero-card.selected').forEach(el => el.classList.remove('selected'));
 
-        // 데이터 초기화
+        // [Fix] 데이터 초기화 - 메모리 누수 방지
         this.selected = [];
         this.pTeam = []; // 팀 정보도 날려서 유령 참조 방지
         this.eTeam = [];
+        this.isMindControlling = null;
+        this.currentMCCasterId = null;
 
         document.getElementById('btn-start').innerText = "⚔️ 전투 시작 (0/3)";
         document.getElementById('btn-start').disabled = true;
 
-        // 주의: init()은 여기서 호출하지 않고, 영웅 선택 화면만 보여줍니다.
-        // init()은 페이지 로드 시 한 번, 혹은 필요 시에만 호출하도록 변경
         this.pool = []; 
 
         // 온라인 모드 정리 추가
         if (isOnlineMode) {
-                isOnlineMode = false;
-                globalRNG = null;
-                gameSeed = null;
+            isOnlineMode = false;
+            globalRNG = null;
+            gameSeed = null;
         }
-        window.onload(); // 다시 초기화 (Game.init 포함)
+        
+        // [Fix] 완전한 재초기화를 위해 window.onload 대신 init 직접 호출
+        this.init();
     },
     // [각성 체크] 스탯 기록 시 각성 확인
     recordStat: function(unit, type, amount) {
@@ -4256,8 +5169,9 @@ endTurn: function(isFast = false) {
             else if (['Water-Light', 'Metal-Light'].includes(k)) targetType = 'ENEMY'; // 디버프 공격
             else targetType = 'ENEMY'; // 나머지는 대부분 공격
         } else if (idx === 2) {
-            // S2는 DB에 있는 target 속성 사용
-            targetType = s.target || 'ENEMY';
+            // [Fix] 나무(Tree) S2는 아군 회복 스킬이므로 강제 변경
+            if (k === 'Tree') targetType = 'ALLY';
+            else targetType = s.target || 'ENEMY';
         }
 
         // 타겟팅 함수 호출
@@ -4452,32 +5366,54 @@ ai: function(u) {
             const sk = SKILL_DB[k];
 
             // ---------------------------------------------------------
-            // 🧠 [AI Core] 헬퍼 함수 정의
+            // 🧠 [AI Core] 헬퍼 함수 정의 (Parsing Logic Fix)
             // ---------------------------------------------------------
 
             const isAttackSkill = (desc, type) => {
                 if (!desc) return false;
-                if (desc.includes('배') || desc.includes('도발') || desc.includes('속박')) return true;
+                
+                // [Fix V2] 공격 키워드 체크
+                const hasAttackKeyword = desc.includes('배') || desc.includes('도발') || desc.includes('속박');
+                const hasHealKeyword = desc.includes('힐') || desc.includes('회복') || desc.includes('HP+');
+                
+                // 힐/회복이 있으면 공격 스킬 아님
+                if (hasHealKeyword) return false;
+                
+                // ✅ 쉴드+공격 복합 스킬 처리 (Metal S1, S2, Water S2 등)
+                if (desc.includes('쉴드') && hasAttackKeyword) return true;
+                
+                // 순수 쉴드만 있으면 공격 아님 (서포터 스킬)
+                if (desc.includes('쉴드') && !hasAttackKeyword) return false;
+                
+                // 일반 공격 키워드 체크
+                if (hasAttackKeyword) return true;
+                
+                // type 기반 체크
                 if (['CC', 'DEBUFF', 'AOE', 'NUKE_PER', 'ATK'].includes(type)) return true;
-                const supportKeywords = ['힐', '쉴드', '정화', '버프', '회피', '성장', '결속'];
-                const supportTypes = ['HEAL', 'BUFF', 'TARGET_BUFF', 'SELF_BUFF', 'ALL_ALLY'];
-                if (supportKeywords.some(kw => desc.includes(kw)) || supportTypes.includes(type)) return false;
-                return true;
+                
+                return false;
             };
 
             const isSupportSkill = (desc, type) => {
                 if (!desc) return false;
+                // [Fix] 공격 키워드가 있으면 보조 스킬 아님으로 강제 (단, 힐+공격 복합기는 제외)
                 if (desc.includes('배') && !desc.includes('힐') && !desc.includes('회복')) return false;
                 if (desc.includes('도발') || desc.includes('속박')) return false;
-                if (['CC', 'DEBUFF', 'AOE'].includes(type)) return false;
-                const supportKeywords = ['힐', '쉴드', '정화', '버프', '회피', '성장', '결속'];
-                const supportTypes = ['HEAL', 'BUFF', 'TARGET_BUFF', 'SELF_BUFF', 'ALL_ALLY'];
+                if (['CC', 'DEBUFF', 'AOE', 'NUKE_PER'].includes(type)) return false;
+                
+                const supportKeywords = ['힐', '쉴드', '정화', '버프', '회피', '성장', '결속', '회복', 'HP+'];
+                const supportTypes = ['HEAL', 'BUFF', 'TARGET_BUFF', 'SELF_BUFF', 'ALL_ALLY', 'ALLY'];
                 return supportKeywords.some(kw => desc.includes(kw)) || supportTypes.includes(type);
             };
 
-            // ⚔️ 공격 점수 계산
+            // ⚔️ [AI 업데이트 V3] 공격 점수 계산 (도발/딜 계산 최적화)
             const getAttackScore = (target, skillIdx) => {
                 if (!target || target.isDead) return -9999;
+                
+                // 🛑 자살 방지
+                if (u.base === 'Normal' && skillIdx === 1 && u.hp <= 30) return -9999; 
+                if (u.getKey() === 'Dark-Dark' && skillIdx === 2 && u.hp < u.maxHp * 0.15) return -5000;
+
                 let score = 0;
                 const skillDesc = skillIdx === 0 ? "기본공격" : (skillIdx === 1 ? (sk.s1d || "") : (sk.s2d || ""));
                 
@@ -4493,25 +5429,34 @@ ai: function(u) {
                 const aff = Game.calc(u, target);
                 const baseDmg = u.getAtk() * multiplier * aff.v;
 
-                // A. 킬 캐치 (Kill Catch)
+                // A. 킬 캐치 (Kill Catch) - 최우선
                 if (baseDmg > 0 && target.hp <= baseDmg && !target.hasStatus('IMMORTAL')) {
                     score += 50000; 
                 } else {
                     score += baseDmg;
                 }
                 
+                // 🧠 낭비 방지: 적 1명일 때 광역기 억제
+                if (aliveEnemies.length === 1 && ['AOE', 'ALL_ENEMY', 'NUKE_PER'].includes(sk.type) && skillIdx > 0) {
+                    if (target.hp > baseDmg) score -= 2000;
+                }
+
+                // 🧱 버프 파괴자 (Earth)
+                if (u.base === 'Earth' && skillIdx === 1) {
+                    if (target.status.some(s => ['EVADE', 'shield', 'LIGHT_MIGHT', 'ATK_BUFF_SMALL'].includes(s.type) || target.shield > 0)) {
+                        score += 2500; 
+                    }
+                }
+
                 // B. 상성 우위
                 if (aff.v > 1.0) score += 300;
 
-                // 🔥 [AI 심화] 악랄한 타겟팅 로직
-                // 1. 약자 멸시
+                // [심화] 타겟팅 우선순위
                 const hpPct = target.hp / target.maxHp;
-                if (hpPct < 0.4) score += 1500;
-                if (hpPct < 0.2) score += 2000;
-
-                // 2. 힐러/서포터 점사
+                if (hpPct < 0.4) score += 1500; // 약자 멸시
+                
                 const tKey = target.getKey();
-                if (SKILL_DB[tKey] && SKILL_DB[tKey].role === 'supp') score += 1000;
+                if (SKILL_DB[tKey] && SKILL_DB[tKey].role === 'supp') score += 1000; // 힐러 점사
 
                 // 3. 쉴드 낭비 방지 (Metal 상대로)
                 if (target.base === 'Metal' && !target.extra && target.shield > 0) {
@@ -4519,7 +5464,7 @@ ai: function(u) {
                     if (baseDmg > dmgCap * 1.5) score -= 3000; 
                 }
 
-                // 4. 광역기 효율 계산
+                // 4. 광역기 효율
                 if (['AOE', 'ALL_ENEMY', 'NUKE_PER'].includes(sk.type) && skillIdx > 0) {
                     let aoeBonus = 0;
                     aliveEnemies.forEach(en => {
@@ -4532,13 +5477,38 @@ ai: function(u) {
                     score += aoeBonus;
                 }
 
-                // C. CC 중복 방지
-                const ccKeywords = ['기절', '빙결', '침묵', '세뇌', '속박', 'STUN', 'FREEZE', 'SILENCE'];
+                // C. CC 중복 방지 (도발 추가!)
+                // 🟢 [수정] '도발'을 CC 키워드에 포함시켜 기본 점수를 받게 함
+                const ccKeywords = ['기절', '빙결', '침묵', '세뇌', '속박', '도발', 'STUN', 'FREEZE', 'SILENCE'];
                 if (ccKeywords.some(kw => skillDesc.includes(kw))) {
                     if (!target.hasStatus('IMMUNITY') && !target.isNormal) {
-                        const hasHardCC = target.hasStatus('STUN') || target.hasStatus('FREEZE') || target.hasStatus('SLEEP');
+                        const hasHardCC = target.hasStatus('STUN') || target.hasStatus('FREEZE') || target.hasStatus('MC_WAIT');
                         if (hasHardCC) score -= 3000;
                         else score += 500;
+                    }
+                }
+
+                // 🛡️ [AI 핵심] Metal(쇠) 도발 로직 완전 개편
+                if (u.base === 'Metal' && !u.extra) {
+                    const myProvokedTarget = aliveEnemies.find(e => e.status.some(s => s.type === `PROVOKED_BY_${u.id}`));
+                    
+                    if (myProvokedTarget) {
+                        // 이미 도발 건 상대가 있다면
+                        if (skillIdx === 2) {
+                            score -= 5000; // 도발 또 쓰지 마 (턴 낭비)
+                        } else if (skillIdx === 1 && target.id === myProvokedTarget.id) {
+                            score += 3000; // 도발 걸린 놈 패서 쉴드 리필
+                        }
+                    } else {
+                        // 🟢 [핵심] 도발 대상이 없다면 S2(도발) 최우선!
+                        if (skillIdx === 2) {
+                            score += 6000; // 킬각(50000) 제외하고 무조건 1순위
+                            
+                            // 🔥 [추가] 아무나 도발하지 말고, '공격력 높은 적'을 우선 도발
+                            if (target.atk) {
+                                score += target.atk * 10; 
+                            }
+                        }
                     }
                 }
 
@@ -4552,7 +5522,7 @@ ai: function(u) {
 
                 // E. 고난이도 평타 억제
                 if (this.difficulty !== 'easy' && skillIdx === 0) {
-                     if (!silenced) score -= 2000;
+                     if (!u.hasStatus('SILENCE')) score -= 2000;
                 }
 
                 return score;
@@ -4561,9 +5531,14 @@ ai: function(u) {
             // 🛡️ 지원 점수 계산
             const getSupportScore = (target, skillIdx) => {
                 if (!target || target.isDead) return -9999;
+
+                // [AI Fix] 나무(Tree)가 이미 수호태세(ROOT_GUARD)면 S1 사용 금지
+                if (u.base === 'Tree' && !u.extra && skillIdx === 1) {
+                    if (u.hasStatus('ROOT_GUARD')) return -9999;
+                }
+
                 let score = 0;
                 const skillDesc = skillIdx === 1 ? (sk.s1d || "") : (sk.s2d || "");
-
                 // A. 힐 효율
                 if (skillDesc.includes('힐') || skillDesc.includes('HP') || sk.type === 'HEAL') {
                     const pct = target.hp / target.maxHp;
@@ -4679,6 +5654,11 @@ ai: function(u) {
         if (u.isDead) return;
         u.isDead = true;
         u.hp = 0;
+        
+        // [Fix] 즉각적인 시각적 피드백 (죽은 눈)
+        const cardId = u.team === 0 ? `p-card-${u.id}` : `e-card-${u.id}`;
+        const el = document.getElementById(cardId);
+        if (el) el.classList.add('dead');
 
         // [수정] 1. 사망한 유닛(u)이 시전한 '세뇌 대기(MC_WAIT)' 상태 모두 제거
         [...Game.pTeam, ...Game.eTeam].forEach(target => {
