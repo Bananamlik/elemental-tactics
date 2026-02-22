@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elemental Tactics v20.0 (Bug Fixed Edition)</title>
+    <title>Elemental Tactics v19.6 (Fixed Edition)</title>
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -1025,18 +1025,18 @@
         /* [툴팁] 스타일 */
         #tooltip-view {
             position: fixed;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.90);
             color: #fff;
-            padding: 10px 15px;
-            border-radius: 10px;
+            padding: 12px 16px;
+            border-radius: 12px;
             font-size: 12px;
             z-index: 150;
-            max-width: 200px;
+            max-width: 280px;
             pointer-events: none;
             display: none;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 179, 217, 0.3);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
             line-height: 1.4;
             text-align: left;
         }
@@ -1707,7 +1707,7 @@
     <div id="selection-screen" class="screen">
         <div style="text-align:center; margin-bottom:15px;">
             <h1 style="margin:0 0 5px 0; color:var(--accent); font-size: 32px; text-shadow: 3px 3px 0 #fff;">🐾 Elemental Tactics</h1>
-            <p style="margin:0 0 5px 0; font-size:15px; color:#8d6e63;">v19.05 Fixed (Effect)</p>
+            <p style="margin:0 0 5px 0; font-size:15px; color:#8d6e63;">v19.60 Fixed (One)</p>
             <p style="margin:0 0 15px 0; font-size:12px; color:#e57373; font-weight:bold;">※ 동일 영웅은 중복해서 선택할 수 없습니다.</p>
             <div style="display:flex; justify-content:center; gap:10px;">
                 <button class="btn-restart" onclick="UI.showGuide()">📖 가이드북</button>
@@ -2061,6 +2061,49 @@ function startOnlineGame(code) {
 }
 
 // ================= [데이터 정의] =================
+
+// [신규] 게임 밸런스 상수
+const GAME_CONSTANTS = {
+    // 체력 관련
+    BASE_HP: 700,
+    TREE_DARK_HP: 800,      // 가시 (Tree-Dark)
+    FIRE_LIGHT_HP: 750,     // 푸른불 (Fire-Light)
+    FIRE_HP: 650,           // 순수 불 (유리대포)
+    
+    // 각성 조건
+    AWAKENING: {
+        NUKER_KILLS: 2,
+        NUKER_DMG: 1500,
+        TANK_TAKEN: 1000,
+        SUPP_HEAL_SHIELD: 1000
+    },
+    
+    // 방어 관련
+    MAX_SHIELD: 400,
+    METAL_BASE_SHIELD: 100,
+    
+    // 데미지 배율
+    DAMAGE_MULTIPLIER: {
+        WEAKNESS: 1.2,
+        RESISTANCE: 0.8,
+        CRITICAL: 1.3,
+        BURN_BOOST: 1.25
+    },
+    
+    // 상태이상 데미지
+    DOT_DAMAGE: {
+        POISON: 35,
+        BURN: 20,
+        TRAP: 60
+    },
+    
+    // 기타
+    MIN_ATK: 10,
+    EVADE_CHANCE: 0.40,
+    KARMA_REFLECT_CHANCE: 0.50,
+    KARMA_REFLECT_RATE: 0.30
+};
+
 const ATTR = { 'Fire':{i:'🔥', n:'불', c:'#e74c3c'}, 'Water':{i:'💧', n:'물', c:'#3498db'}, 'Tree':{i:'🌿', n:'나무', c:'#2ecc71'}, 'Metal':{i:'⚔️', n:'쇠', c:'#95a5a6'}, 'Earth':{i:'⛰️', n:'흙', c:'#e67e22'}, 'Light':{i:'☀️', n:'빛', c:'#f1c40f'}, 'Dark':{i:'🌙', n:'어둠', c:'#9b59b6'}, 'Normal':{i:'☀️🌙', n:'노말', c:'#ecf0f1'} };
 const NAME_MAP = { 'Water-Light':'증기', 'Fire-Light':'푸른불', 'Tree-Light':'숲', 'Metal-Light':'독가스', 'Earth-Light':'모래', 'Water-Dark':'얼음', 'Fire-Dark':'검은불', 'Tree-Dark':'가시', 'Metal-Dark':'전기', 'Earth-Dark':'바위', 'Light-Light':'빛(강화)', 'Dark-Dark':'어둠(강화)', 'Normal':'노말' };
 const IMAGE_DB = {
@@ -2127,11 +2170,11 @@ const SKILL_DB = {
     
     'Light-Light': { s1:'신의심판', s1d:'1.5배', s2:'성역', s2d:'전체 쉴드+50/정화', type:'BUFF', target:'ALL_ALLY', role:'supp', icon:'👼', desc:'메인 버퍼<br>정화 + 쉴드', passive:null },
     
-    // [수정] 공깎 수치 조건 명시
-    'Dark': { s1:'다크볼', s1d:'1.5배+업보(피해량30%반사/CC반사)', s2:'공포', s2d:'광역 0.4배/공20~35%↓', type:'AOE', target:'ALL_ENEMY', role:'supp', icon:'👻', desc:'광역 디버퍼<br>공포 + 쉴드파괴', passive:'👁️ 업보: 다크볼 피격자가 상태이상을 걸면 50% 확률로 반사.' },
+    // [수정] 공깎 수치 조건 명시 - 정화 불가능, 20% 고정, 중첩 불가능
+    'Dark': { s1:'다크볼', s1d:'1.5배+업보(피해량30%반사/CC반사)', s2:'공포', s2d:'광역 0.4배/공20%↓(정화불가/중첩불가)', type:'AOE', target:'ALL_ENEMY', role:'supp', icon:'👻', desc:'광역 디버퍼<br>공포 + 쉴드파괴', passive:'👁️ 업보: 다크볼 피격자가 상태이상을 걸면 50% 확률로 반사.' },
     
     // [수정] 코스트 20% -> 12% 수정
-    'Dark-Dark': { s1:'심연일격', s1d:'0.8배+침묵(1턴)', s2:'정신지배', s2d:'HP12%소모/세뇌(30~55%)', type:'DEBUFF', target:'ENEMY', role:'supp', icon:'🧠', desc:'심연의 지배자<br>적 제어권 탈취', passive:'🌑 심연의 힘: 세뇌 성공률은 기본 30%이며, 대상의 체력이 낮을수록 최대 55%까지 증가합니다. 성공 시 다음 턴 적을 1회 조종합니다.' }
+    'Dark-Dark': { s1:'심연일격', s1d:'0.8배+침묵(1턴)', s2:'정신지배', s2d:'HP12%소모/세뇌(30~55%)', type:'DEBUFF', target:'ENEMY', role:'supp', icon:'🧠', desc:'컨트롤러<br>적 제어권 탈취', passive:'🌑 심연의 힘: 세뇌 성공률은 기본 30%이며, 대상의 체력이 낮을수록 최대 55%까지 증가합니다. 성공 시 다음 턴 적을 1회 조종합니다.' }
 };
 
 // [신규] Emotion Alias Database (English)
@@ -2206,6 +2249,138 @@ const ChallengeDB = [
     // 10. [최종보스] The Apex
     { name: "The Apex (정점)", desc: "도발(Metal), 세뇌(Dark-Dark), 정화(Light-Light). 이 게임의 최강자들입니다.", team: ['Metal', 'Dark-Dark', 'Light-Light'] }
 ];
+
+// ========================================
+// [Hard Mode] 고승률 조합 데이터베이스
+// ========================================
+const HighWinRateComps = [
+    // S 티어
+    { id: 'iron_sanctuary', name: '철벽 성역', team: ['Metal', 'Tree', 'Water'], tier: 'S', tags: ['tank', 'heal', 'sustain'] },
+    { id: 'absolute_mind', name: '절대메어', team: ['Dark-Dark', 'Water-Dark', 'Light-Light'], tier: 'S', tags: ['cc', 'control', 'cleanse'] },
+    { id: 'infinite_wall', name: '무한벽전지', team: ['Earth-Dark', 'Light-Light', 'Metal'], tier: 'S', tags: ['burst', 'cleanse', 'tank'] },
+    { id: 'oneshot_kill', name: '원샷 킬', team: ['Earth-Dark', 'Metal', 'Dark-Dark'], tier: 'S', tags: ['burst', 'tank', 'control'] },
+    { id: 'angel_fortress', name: '천사의 요새', team: ['Light-Light', 'Metal', 'Tree'], tier: 'S', tags: ['cleanse', 'tank', 'sustain'] },
+    
+    // A+ 티어
+    { id: 'early_snowball', name: '초반 스노우볼', team: ['Fire', 'Fire-Light', 'Metal-Dark'], tier: 'A+', tags: ['burst', 'early', 'aoe'] },
+    { id: 'vampire_tank', name: '흡버오싸', team: ['Tree', 'Water', 'Light-Light'], tier: 'A+', tags: ['sustain', 'heal', 'cleanse'] },
+    { id: 'poison_massacre', name: '독가스 학살', team: ['Metal-Light', 'Fire-Dark', 'Metal-Dark'], tier: 'A+', tags: ['dot', 'counter_heal', 'aoe'] },
+    { id: 'healer_killer', name: '힐러 학살', team: ['Earth-Light', 'Metal-Light', 'Metal'], tier: 'A+', tags: ['counter_heal', 'dot', 'tank'] },
+    { id: 'cc_hell', name: 'CC 지옥', team: ['Water-Dark', 'Earth', 'Dark-Dark'], tier: 'A+', tags: ['cc', 'control', 'freeze'] },
+    { id: 'all_tank', name: '올 탱커', team: ['Metal', 'Tree', 'Fire-Light'], tier: 'A+', tags: ['tank', 'sustain', 'vampire'] },
+    
+    // A 티어
+    { id: 'aoe_massacre', name: '광역 학살', team: ['Metal-Dark', 'Fire', 'Fire-Dark'], tier: 'A', tags: ['aoe', 'burn', 'electric'] },
+    { id: 'growth_comp', name: '성장 조합', team: ['Tree-Dark', 'Metal-Dark', 'Water'], tier: 'A', tags: ['growth', 'late', 'heal'] },
+    { id: 'vampire_carry', name: '속파 캐리', team: ['Fire-Light', 'Tree-Dark', 'Metal'], tier: 'A', tags: ['vampire', 'growth', 'tank'] },
+    { id: 'rng_comp', name: '변태 조합', team: ['Normal', 'Dark-Dark', 'Earth-Dark'], tier: 'A', tags: ['rng', 'control', 'burst'] },
+    { id: 'balanced', name: '2인 모드', team: ['Normal', 'Water', 'Metal'], tier: 'A', tags: ['balanced', 'heal', 'tank'] }
+];
+
+// ========================================
+// [Hard Mode] 상성 매트릭스 시스템
+// ========================================
+const CounterMatrix = {
+    // 태그 기반 카운터 관계
+    tagCounters: {
+        'tank': ['burst', 'dot', 'counter_heal'],           // 탱커는 폭딜/독/힐차단에 약함
+        'heal': ['counter_heal', 'dot', 'burst'],           // 힐러는 힐차단/독/폭딜에 약함
+        'sustain': ['burst', 'counter_heal', 'dot'],        // 유지력은 폭딜/힐차단/독에 약함
+        'burst': ['tank', 'cleanse', 'sustain'],            // 폭딜은 탱커/정화/유지력에 약함
+        'cc': ['cleanse', 'immunity'],                      // CC는 정화/면역에 약함
+        'control': ['cleanse', 'tank'],                     // 컨트롤은 정화/탱커에 약함
+        'dot': ['cleanse', 'heal'],                         // 독은 정화/힐에 약함
+        'early': ['sustain', 'tank'],                       // 초반형은 유지력/탱커에 약함
+        'growth': ['early', 'burst'],                       // 성장형은 초반형/폭딜에 약함
+        'aoe': ['single_target', 'tank'],                   // 광역은 단일타겟/탱커에 약함
+        'vampire': ['counter_heal', 'burst'],               // 흡혈은 힐차단/폭딜에 약함
+    },
+    
+    // 특정 조합 간 하드 카운터 (구체적 상성)
+    hardCounters: {
+        'iron_sanctuary': ['poison_massacre', 'healer_killer', 'early_snowball'],     // 철벽 성역
+        'absolute_mind': ['angel_fortress', 'all_tank', 'iron_sanctuary'],            // 절대메어 (정화에 약함)
+        'infinite_wall': ['cc_hell', 'absolute_mind', 'poison_massacre'],             // 무한벽전지
+        'oneshot_kill': ['angel_fortress', 'all_tank', 'vampire_tank'],               // 원샷 킬
+        'angel_fortress': ['poison_massacre', 'healer_killer', 'aoe_massacre'],       // 천사의 요새
+        'early_snowball': ['iron_sanctuary', 'all_tank', 'vampire_tank'],             // 초반 스노우볼
+        'vampire_tank': ['poison_massacre', 'healer_killer', 'early_snowball'],       // 흡버오싸
+        'poison_massacre': ['angel_fortress', 'vampire_tank', 'balanced'],            // 독가스 학살 (정화에 약함)
+        'healer_killer': ['balanced', 'oneshot_kill', 'early_snowball'],              // 힐러 학살
+        'cc_hell': ['angel_fortress', 'all_tank', 'vampire_tank'],                    // CC 지옥 (정화에 약함)
+        'all_tank': ['poison_massacre', 'healer_killer', 'growth_comp'],              // 올 탱커
+        'aoe_massacre': ['iron_sanctuary', 'all_tank', 'infinite_wall'],              // 광역 학살
+        'growth_comp': ['early_snowball', 'oneshot_kill', 'cc_hell'],                 // 성장 조합
+        'vampire_carry': ['poison_massacre', 'healer_killer', 'early_snowball'],      // 속파 캐리
+        'rng_comp': ['iron_sanctuary', 'all_tank', 'balanced'],                       // 변태 조합
+        'balanced': ['absolute_mind', 'oneshot_kill', 'aoe_massacre']                 // 2인 모드
+    },
+    
+    // 플레이어 조합에 대한 카운터 찾기
+    findCounters: function(playerTeam) {
+        const playerKey = this.getCompKey(playerTeam);
+        
+        // 1. 정확히 일치하는 조합이 있으면 하드 카운터 반환
+        if (playerKey && this.hardCounters[playerKey]) {
+            return this.hardCounters[playerKey];
+        }
+        
+        // 2. 플레이어 조합의 태그 분석
+        const playerTags = this.analyzeTags(playerTeam);
+        const counterScores = {};
+        
+        HighWinRateComps.forEach(comp => {
+            let score = 0;
+            comp.tags.forEach(tag => {
+                // 이 조합의 태그가 플레이어 태그를 카운터하는가?
+                playerTags.forEach(pTag => {
+                    if (this.tagCounters[pTag] && this.tagCounters[pTag].includes(tag)) {
+                        score += 3; // 카운터 점수
+                    }
+                });
+            });
+            counterScores[comp.id] = score;
+        });
+        
+        // 3. 점수 순으로 정렬
+        const sorted = Object.entries(counterScores)
+            .sort((a, b) => b[1] - a[1])
+            .map(([id, score]) => id);
+        
+        return sorted.slice(0, 5); // 상위 5개 반환
+    },
+    
+    // 조합 키 찾기
+    getCompKey: function(team) {
+        const teamStr = team.map(u => u.getKey ? u.getKey() : u).sort().join(',');
+        for (const comp of HighWinRateComps) {
+            const compStr = comp.team.map(k => k === 'Normal' ? 'Light-Dark' : k).sort().join(',');
+            if (teamStr === compStr) return comp.id;
+        }
+        return null;
+    },
+    
+    // 태그 분석
+    analyzeTags: function(team) {
+        const keys = team.map(u => u.getKey ? u.getKey() : u);
+        const tags = new Set();
+        
+        // 구성원 기반 태그 추론
+        if (keys.includes('Metal')) tags.add('tank');
+        if (keys.includes('Tree')) tags.add('sustain');
+        if (keys.includes('Water') || keys.includes('Light')) tags.add('heal');
+        if (keys.includes('Light-Light')) tags.add('cleanse');
+        if (keys.includes('Dark-Dark')) tags.add('control');
+        if (keys.includes('Earth-Dark')) tags.add('burst');
+        if (keys.includes('Fire') || keys.includes('Fire-Light')) tags.add('early');
+        if (keys.includes('Metal-Light') || keys.includes('Fire-Dark')) tags.add('dot');
+        if (keys.includes('Water-Dark')) tags.add('cc');
+        if (keys.includes('Earth-Light')) tags.add('counter_heal');
+        if (keys.includes('Normal')) tags.add('rng');
+        
+        return Array.from(tags);
+    }
+};
 
 // [Online] 시드 기반 난수 생성기 (동기화 필수)
 // Math.random() 대신 이걸 써야 두 플레이어의 결과가 똑같습니다.
@@ -2620,9 +2795,9 @@ const SKILL_LOGIC = {
                     const act = Common.applyDamage(atk, e, 0.4, game);
                     if (act !== -1) {
                         Common.logAction(game, 'dmg', atk, e, act, "");
-                        const hasFear = e.status.some(s => s.type === 'ATK_DOWN');
+                        // [수정] 중첩 제거, 20% 고정, 정화 불가능
                         e.status = e.status.filter(s => s.type !== 'ATK_DOWN');
-                        e.addStatus('ATK_DOWN', 2, hasFear ? 35 : 20, atk);
+                        e.addStatus('ATK_DOWN_FEAR', 2, 20, atk); // 새로운 타입으로 변경 (정화 불가)
                         if (e.shield > 0) {
                             const brk = Math.floor(e.shield * 0.3);
                             e.shield -= brk;
@@ -3083,18 +3258,27 @@ class Unit {
         this.team = team;
         this.base = base;
         this.extra = extra;
-        // [Balance] 기본 체력 +100 상향 (전투 호흡 조절)
-        this.maxHp = 700;
-        // 가시(Tree-Dark)는 탱커형 딜러라 더 높게 유지 (+100 차이)
-        if (base === 'Tree' && extra === 'Dark') this.maxHp = 800;
-        // 푸른불(Fire-Light)은 서브 탱커라 약간 높게 유지 (+50 차이)
-        if (base === 'Fire' && extra === 'Light') this.maxHp = 750;
-        // [Balance] 불(Fire) 기본 체력 50 너프 (유리대포 화)
-        if (base === 'Fire' && !extra) this.maxHp = 650;
+        
+        // [Balance] 체력 설정 - 상수 사용
+        this.maxHp = GAME_CONSTANTS.BASE_HP;
+        
+        // 가시(Tree-Dark)는 탱커형 딜러라 더 높게 유지
+        if (base === 'Tree' && extra === 'Dark') {
+            this.maxHp = GAME_CONSTANTS.TREE_DARK_HP;
+        }
+        // 푸른불(Fire-Light)은 서브 탱커라 약간 높게 유지
+        else if (base === 'Fire' && extra === 'Light') {
+            this.maxHp = GAME_CONSTANTS.FIRE_LIGHT_HP;
+        }
+        // [Balance] 불(Fire) 기본 체력 너프 (유리대포화)
+        else if (base === 'Fire' && !extra) {
+            this.maxHp = GAME_CONSTANTS.FIRE_HP;
+        }
+        
         this.hp = this.maxHp;
         this.evadeTriggered = false;
         this.revengeAtk = 0;
-        this.shield = (base === 'Metal' && !extra) ? 100 : 0;
+        this.shield = (base === 'Metal' && !extra) ? GAME_CONSTANTS.METAL_BASE_SHIELD : 0;
 
         if (this.team === 1 && typeof Game !== 'undefined' && (Game.difficulty === 'hell' || Game.difficulty === 'hard')) {
             this.atk = 70;
@@ -3140,22 +3324,28 @@ class Unit {
         if (typeof Game !== 'undefined' && Game.difficulty === 'tutorial') return;
 
         if (this.isSuper) return;
-        let trigger = false;
-        // [Balance] 쉴드 최대량 400으로 제한
-        if (this.shield > 400) this.shield = 400;
-
-        if (this.isSuper) return;
-        const key = this.getKey();
-        const role = SKILL_DB[key].role;
-        let awakened = false;
-        if (role === 'nuker') {
-            if (this.stats.kills >= 2 || this.stats.dmg >= 1500) awakened = true;
-        } else if (role === 'tank') {
-            if (this.stats.taken >= 1000) awakened = true;
-        } else if (role === 'supp') {
-            if ((this.stats.heal + this.stats.shieldGiven) >= 1000) awakened = true;
+        
+        // [Balance] 쉴드 최대량 제한
+        if (this.shield > GAME_CONSTANTS.MAX_SHIELD) {
+            this.shield = GAME_CONSTANTS.MAX_SHIELD;
         }
-if (awakened) {
+
+        const key = this.getKey();
+        const role = SKILL_DB[key]?.role;
+        if (!role) return;
+        
+        let awakened = false;
+        
+        if (role === 'nuker') {
+            awakened = this.stats.kills >= GAME_CONSTANTS.AWAKENING.NUKER_KILLS || 
+                      this.stats.dmg >= GAME_CONSTANTS.AWAKENING.NUKER_DMG;
+        } else if (role === 'tank') {
+            awakened = this.stats.taken >= GAME_CONSTANTS.AWAKENING.TANK_TAKEN;
+        } else if (role === 'supp') {
+            awakened = (this.stats.heal + this.stats.shieldGiven) >= GAME_CONSTANTS.AWAKENING.SUPP_HEAL_SHIELD;
+        }
+        
+        if (awakened) {
             this.isSuper = true;
             
             // [Modified] Emotion Awakening Logic
@@ -3187,33 +3377,47 @@ if (awakened) {
 
     getAtk() {
         let v = this.atk;
+        
+        // [Fire 패시브] 불의 기세: 라운드별 공격력 증가
         if (this.base === 'Fire' && !this.extra) {
-            // [수정] 턴(행동수) 대신 라운드(사이클) 기준 적용
             const r = (typeof Game !== 'undefined' && Game.globalRound) ? Game.globalRound : 1;
             
             if (r <= 2) v += 15;      // 1~2라운드 (초반)
             else if (r <= 6) v += 10; // 3~6라운드 (중반)
             else v += 5;              // 7라운드 이후 (후반)
         }
+        
+        // [Tree-Dark 패시브] 복수
         if (this.revengeAtk > 0) v += this.revengeAtk;
+        
+        // [Light 패시브] 빛의 힘
         const lightMight = this.status.find(s => s.type === 'LIGHT_MIGHT');
         if (lightMight) {
-            if ((lightMight.val || 1) <= 1) v += 15;
-            else v += 20;
+            v += (lightMight.val || 1) <= 1 ? 15 : 20;
         }
+        
+        // 기타 버프
         if (this.hasStatus('ATK_BUFF_SMALL')) v += 10;
-
-        // [신규] 데미지 10% 증가 버프 적용 (최종 곱연산)
         if (this.hasStatus('DMG_UP_10')) v = Math.floor(v * 1.1);
         
-        v = Math.max(10, v);
-        const ads = this.status.filter(s => s.type === 'ATK_DOWN');
-        if (ads.length > 0) {
-            ads.forEach(s => {
-                if (s.val > 0) v -= Math.floor(v * (s.val / 100));
-                else v -= 15;
+        // 최소값 적용
+        v = Math.max(GAME_CONSTANTS.MIN_ATK, v);
+        
+        // 공격력 감소 디버프 적용
+        const atkDownDebuffs = this.status.filter(s => 
+            s.type === 'ATK_DOWN' || s.type === 'ATK_DOWN_FEAR'
+        );
+        
+        if (atkDownDebuffs.length > 0) {
+            atkDownDebuffs.forEach(debuff => {
+                if (debuff.val > 0) {
+                    v -= Math.floor(v * (debuff.val / 100));
+                } else {
+                    v -= 15; // 기본값
+                }
             });
         }
+        
         return Math.max(0, v);
     }
 
@@ -3229,10 +3433,13 @@ if (awakened) {
             dmg = Math.floor(dmg * (1.0 - reducePct));
         }
 
-        if (isFire && this.hasStatus('BURN')) dmg = Math.floor(dmg * 1.25);
+        // [화상 버프] 불 속성 공격이 화상 상태 적에게 25% 추가 피해
+        if (isFire && this.hasStatus('BURN')) {
+            dmg = Math.floor(dmg * GAME_CONSTANTS.DAMAGE_MULTIPLIER.BURN_BOOST);
+        }
 
+        // [Metal 패시브] 강철 의지: 최대 체력 20% 이상 피해 방어
         if (this.base === 'Metal' && !this.extra && this.shield > 0) {
-            // [Balance] 패시브 발동 조건 완화 (MaxHP 30% -> 20%)
             const cap = Math.floor(this.maxHp * 0.20);
             if (dmg > cap) {
                 dmg = cap;
@@ -3240,19 +3447,27 @@ if (awakened) {
             }
         }
 
-        if (this.hasStatus('DMG_RED')) dmg = Math.floor(dmg * 0.8);
+        // 데미지 감소 버프 적용
+        if (this.hasStatus('DMG_RED')) {
+            dmg = Math.floor(dmg * 0.8);
+        }
+        
+        // 회피 체크
         if (this.hasStatus('EVADE')) {
-            if (Game.netRandom() < 0.40) {
+            if (Game.netRandom() < GAME_CONSTANTS.EVADE_CHANCE) {
                 UI.floatText(this, "회피!", "ft-miss");
                 this.status = this.status.filter(s => s.type !== 'EVADE');
                 return -1;
             }
         }
+        
+        // [Dark 패시브] 업보: 피해 반사
         if (source && source.id !== this.id && !source.isDead) {
             const karma = source.status.find(s => s.type === `KARMA_VICTIM_${this.id}`);
             const isDarkVsDark = (this.base === 'Dark' && source.base === 'Dark');
+            
             if (karma && !isDarkVsDark) {
-                const reflectDmg = Math.floor(dmg * 0.3);
+                const reflectDmg = Math.floor(dmg * GAME_CONSTANTS.KARMA_REFLECT_RATE);
                 if (reflectDmg > 0) {
                     const actualReflect = source.takeDamage(reflectDmg, false, true, null);
                     this.stats.dmg += actualReflect;
@@ -3339,7 +3554,7 @@ if (awakened) {
             const isPuppet = (this.hasStatus('MC_READY') || (Game.isMindControlling && Game.isMindControlling.id === this.id));
             
             if (karma && !isDarkVsDark && !isPuppet) {
-                if (Game.netRandom() < 0.5) {
+                if (Game.netRandom() < GAME_CONSTANTS.KARMA_REFLECT_CHANCE) {
                     UI.floatText(this, "반사!", "ft-crit");
                     Game.log(`<span class='log-crit'>👁️ [${this.name}]의 업보 발동! [${source.name}]에게 ${type} 반사</span>`);
                     source.addStatus(type, turn, val, null, true);
@@ -3356,6 +3571,7 @@ if (awakened) {
         }
 
         // 🔥 4. 중첩 가능 상태이상(공격/치유 감소) 최우선 처리
+        // [수정] ATK_DOWN_FEAR는 중첩 불가능하므로 제외
         if (type === 'ATK_DOWN' || type === 'HEAL_DOWN') {
             const s = this.status.filter(s => s.type === type);
             if (s.length < 2) {
@@ -3405,7 +3621,7 @@ if (awakened) {
         // 7. 회피 체크
         if (this.hasStatus('EVADE') && ['STUN', 'FREEZE'].includes(type) && !force) {
             if (source && source.id !== this.id) {
-                if (Game.netRandom() < 0.40) {
+                if (Game.netRandom() < GAME_CONSTANTS.EVADE_CHANCE) {
                     UI.floatText(this, "회피!", "ft-miss");
                     this.status = this.status.filter(s => s.type !== 'EVADE');
                     return;
@@ -3456,7 +3672,7 @@ if (awakened) {
              });
          }
      }
-        if (this.resist > 0 && Game.netRandom() < this.resist && ['POISON', 'BURN', 'FREEZE', 'STUN', 'SILENCE', 'BLIND', 'TRAP', 'BANISH', 'ATK_DOWN', 'HEAL_DOWN'].includes(type)) return;
+        if (this.resist > 0 && Game.netRandom() < this.resist && ['POISON', 'BURN', 'FREEZE', 'STUN', 'SILENCE', 'BLIND', 'TRAP', 'BANISH', 'ATK_DOWN', 'ATK_DOWN_FEAR', 'HEAL_DOWN'].includes(type)) return;
         
         // 9. 최종 등록
         this.status.push({
@@ -3470,6 +3686,7 @@ if (awakened) {
         return this.status.some(s => s.type === type);
     }
     cleanse() {
+        // [수정] ATK_DOWN_FEAR는 정화 불가능
         const bad = ['POISON', 'BURN', 'FREEZE', 'STUN', 'SILENCE', 'BLIND', 'TRAP', 'BANISH', 'ATK_DOWN', 'KARMA_VICTIM'];
         this.status = this.status.filter(s => !bad.includes(s.type) && !s.type.startsWith('PROVOKED') && !s.type.startsWith('KARMA_VICTIM'));
     }
@@ -3489,8 +3706,8 @@ if (awakened) {
         const poison = this.status.find(s => s.type === 'POISON');
         if (poison) {
             const src = findSource(poison.sourceId);
-            const d = this.takeDamage(35, false, false, src); // 킬 로그를 위해 src 전달
-            if (src) Game.recordStat(src, 'dmg', d);          // 통계 기록
+            const d = this.takeDamage(GAME_CONSTANTS.DOT_DAMAGE.POISON, false, false, src);
+            if (src) Game.recordStat(src, 'dmg', d);
             UI.floatText(this, d, 'ft-dmg');
             log.push(`☠️ [${this.name}] 독 피해 -${d}`);
         }
@@ -3499,7 +3716,7 @@ if (awakened) {
         const burn = this.status.find(s => s.type === 'BURN');
         if (burn) {
             const src = findSource(burn.sourceId);
-            const d = this.takeDamage(20, false, false, src);
+            const d = this.takeDamage(GAME_CONSTANTS.DOT_DAMAGE.BURN, false, false, src);
             if (src) Game.recordStat(src, 'dmg', d);
             UI.floatText(this, d, 'ft-dmg');
             log.push(`🔥 [${this.name}] 화상 피해 -${d}`);
@@ -3509,8 +3726,7 @@ if (awakened) {
         const trap = this.status.find(s => s.type === 'TRAP');
         if (trap) {
             const src = findSource(trap.sourceId);
-            // [Balance] 속박 데미지 40 -> 60 상향 유지
-            const d = this.takeDamage(60, false, false, src);
+            const d = this.takeDamage(GAME_CONSTANTS.DOT_DAMAGE.TRAP, false, false, src);
             if (src) Game.recordStat(src, 'dmg', d);
             UI.floatText(this, d, 'ft-dmg');
             log.push(`⏳ [${this.name}] 모래지옥 -${d}`);
@@ -4092,8 +4308,9 @@ const UI = {
         el.className = `float-text ${type}`;
         el.innerText = type === 'ft-heal' ? `+${text}` : text;
         const rect = unitEl.getBoundingClientRect();
-        const randomX = (Math.random() - 0.5) * 40;
-        const randomY = (Math.random() - 0.5) * 20;
+        // [개선] 텍스트 겹침 방지: 랜덤 오프셋 범위 확대
+        const randomX = (Math.random() - 0.5) * 80; // 40 → 80으로 증가
+        const randomY = (Math.random() - 0.5) * 60; // 20 → 60으로 증가
         el.style.left = (rect.left + rect.width / 2 + window.scrollX + randomX) + 'px';
         el.style.top = (rect.top + window.scrollY + randomY) + 'px';
         document.body.appendChild(el);
@@ -4216,13 +4433,53 @@ const UI = {
             // [UI] 확률 및 상세 정보 표시
             if (s.type.startsWith('KARMA_VICTIM')) info += ' <span style="color:#ffcc80; font-size:10px;">(반사 50%)</span>';
             if (s.type === 'MC_WAIT') info += ' <span style="color:#ff80ab; font-size:10px;">(세뇌 대기)</span>';
+            if (s.type === 'ATK_DOWN_FEAR') info += ' <span style="color:#e91e63; font-size:10px;">(공포: -20%, 정화불가)</span>';
             return info;
         }).join('<br>') || '없음';
+        
+        // [개선] 역할군 배지 색상
+        const roleColors = {
+            'tank': '#4db6ac',
+            'nuker': '#ff7043', 
+            'supp': '#9575cd'
+        };
+        const roleNames = {
+            'tank': '탱커',
+            'nuker': '딜러',
+            'supp': '서포터'
+        };
+        const roleColor = roleColors[info.role] || '#999';
+        const roleName = roleNames[info.role] || '기타';
+        
         const html = `
-            <div class="tooltip-title">${u.name} (HP: ${u.hp})</div>
-            <div style="margin-bottom:5px;">${info.desc}</div>
-            <div style="color:#aaa; border-top:1px solid #555; padding-top:3px; margin-top:3px;">
-                <b>상태이상:</b><br>${statusText}
+            <div class="tooltip-title">${u.name} ${info.icon}</div>
+            <div style="margin-bottom:8px;">
+                <span style="display:inline-block; background:${roleColor}; color:#fff; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:bold; margin-bottom:5px;">
+                    ${roleName}
+                </span>
+                <div style="font-size:11px; color:#ddd; line-height:1.4;">${info.desc}</div>
+            </div>
+            
+            ${info.passive ? `
+            <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:8px; margin-bottom:8px; border-left:3px solid #ffd54f;">
+                <div style="color:#ffd54f; font-size:10px; font-weight:bold; margin-bottom:2px;">⚡ 패시브</div>
+                <div style="font-size:10px; color:#ddd; line-height:1.3;">${info.passive}</div>
+            </div>
+            ` : ''}
+            
+            <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:8px; margin-bottom:8px;">
+                <div style="color:#81d4fa; font-size:10px; font-weight:bold; margin-bottom:3px;">🔹 스킬 1: ${info.s1}</div>
+                <div style="font-size:10px; color:#bbb; line-height:1.3;">${info.s1d}</div>
+            </div>
+            
+            <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:8px; margin-bottom:8px;">
+                <div style="color:#ce93d8; font-size:10px; font-weight:bold; margin-bottom:3px;">🔸 스킬 2: ${info.s2}</div>
+                <div style="font-size:10px; color:#bbb; line-height:1.3;">${info.s2d}</div>
+            </div>
+            
+            <div style="color:#aaa; border-top:1px solid #555; padding-top:5px; margin-top:3px;">
+                <div style="font-size:10px;"><b>현재 공격력:</b> ${u.getAtk()}</div>
+                <div style="font-size:10px; margin-top:2px;"><b>상태이상:</b><br>${statusText}</div>
             </div>
         `;
         const tooltip = document.getElementById('tooltip-view');
@@ -4767,6 +5024,191 @@ const UI = {
     }
 }; // UI 객체 여기서 끝! (중괄호, 세미콜론 필수)
 
+// ==========================================
+// 🧠 [NEW] AI 예측 엔진 (Prediction Engine)
+// ==========================================
+const PredictionEngine = {
+    // 다음 N턴 내 사망 위험 예측
+    predictDeath: function(unit, turnsAhead = 2) {
+        if (!unit || unit.isDead) return false;
+        
+        try {
+            // 현재 큐에서 다음 N개의 턴 가져오기
+            const currentIdx = Game.curr;
+            const futureActions = [];
+            
+            for (let i = 1; i <= turnsAhead && i < 6; i++) {
+                const nextIdx = (currentIdx + i) % 6;
+                futureActions.push(Game.queue[nextIdx]);
+            }
+            
+            // 적 공격자만 필터링
+            let totalPredictedDamage = 0;
+            futureActions.forEach(tVal => {
+                const attacker = tVal % 2 === 0 ? Game.pTeam[Math.floor(tVal / 2)] : Game.eTeam[Math.floor((tVal - 1) / 2)];
+                
+                if (!attacker || attacker.isDead || attacker.team === unit.team) return;
+                
+                // 예상 피해량 계산 (보수적 추정: 1.5배)
+                const baseDmg = attacker.getAtk() * 1.5;
+                const aff = Game.calc(attacker, unit);
+                totalPredictedDamage += baseDmg * aff.v;
+            });
+            
+            // 현재 HP + 쉴드로 버틸 수 있는지 판단
+            return (unit.hp + unit.shield) < totalPredictedDamage;
+            
+        } catch (e) {
+            console.warn('[PredictionEngine] Error:', e);
+            return false;
+        }
+    },
+    
+    // 특정 유닛의 다음 턴까지 거리 계산
+    getTurnsUntilAction: function(unit) {
+        if (!unit || unit.isDead) return 999;
+        
+        try {
+            const unitQueueVal = unit.team === 0 ? unit.id * 2 : unit.id * 2 + 1;
+            const currentIdx = Game.curr;
+            
+            for (let i = 1; i < 6; i++) {
+                const checkIdx = (currentIdx + i) % 6;
+                if (Game.queue[checkIdx] === unitQueueVal) {
+                    return i;
+                }
+            }
+            return 6;
+        } catch (e) {
+            return 999;
+        }
+    },
+    
+    // 다음 N턴 내에 행동할 적 힐러 찾기
+    findUpcomingEnemyHealer: function(myTeam, turnsAhead = 3) {
+        try {
+            const enemies = myTeam === 0 ? Game.eTeam : Game.pTeam;
+            const currentIdx = Game.curr;
+            
+            for (let i = 1; i <= turnsAhead && i < 6; i++) {
+                const nextIdx = (currentIdx + i) % 6;
+                const tVal = Game.queue[nextIdx];
+                const nextUnit = tVal % 2 === 0 ? Game.pTeam[Math.floor(tVal / 2)] : Game.eTeam[Math.floor((tVal - 1) / 2)];
+                
+                if (!nextUnit || nextUnit.isDead || nextUnit.team === myTeam) continue;
+                
+                const key = nextUnit.getKey();
+                if (SKILL_DB[key] && SKILL_DB[key].role === 'supp') {
+                    return { unit: nextUnit, turnsAway: i };
+                }
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+};
+
+// ==========================================
+// 🔮 [NEW] 전투 상황 분석기 (Combat Analyzer)
+// ==========================================
+const CombatAnalyzer = {
+    // 현재 전황 종합 평가
+    evaluateSituation: function(aiTeam) {
+        try {
+            const allies = aiTeam === 0 ? Game.pTeam : Game.eTeam;
+            const enemies = aiTeam === 0 ? Game.eTeam : Game.pTeam;
+            
+            const allyHP = allies.reduce((sum, u) => sum + (u.isDead ? 0 : u.hp), 0);
+            const enemyHP = enemies.reduce((sum, u) => sum + (u.isDead ? 0 : u.hp), 0);
+            
+            const aliveAllies = allies.filter(u => !u.isDead).length;
+            const aliveEnemies = enemies.filter(u => !u.isDead).length;
+            
+            return {
+                phase: this.getPhase(),
+                advantage: enemyHP > 0 ? (allyHP / enemyHP) : 2.0,
+                urgency: this.calculateUrgency(allies, enemies),
+                aliveAllies: aliveAllies,
+                aliveEnemies: aliveEnemies,
+                winCondition: this.determineWinCondition(allyHP, enemyHP, aliveAllies, aliveEnemies)
+            };
+        } catch (e) {
+            console.warn('[CombatAnalyzer] Error:', e);
+            return { phase: 'MID', advantage: 1.0, urgency: 0, winCondition: 'TRADE' };
+        }
+    },
+    
+    // 전투 단계 구분
+    getPhase: function() {
+        const round = Game.globalRound || Math.ceil(Game.turnCount / 6);
+        const totalAlive = [...Game.pTeam, ...Game.eTeam].filter(u => !u.isDead).length;
+        
+        if (round <= 2) return 'EARLY';           // 초반: 자원 아끼기
+        if (totalAlive <= 2) return 'DESPERATE';  // 1:1 or 2:1: 필사적
+        if (round >= 10) return 'FATIGUE';        // 장기전: 힐러 의존
+        return 'MID';                             // 중반: 일반
+    },
+    
+    // 긴급도 계산
+    calculateUrgency: function(allies, enemies) {
+        let urgency = 0;
+        
+        // 아군 위험 상태 체크
+        const criticalAllies = allies.filter(u => !u.isDead && u.hp < u.maxHp * 0.3).length;
+        urgency += criticalAllies * 30;
+        
+        // 적 위협도 체크
+        const enemyNukers = enemies.filter(u => {
+            if (u.isDead) return false;
+            const key = u.getKey();
+            return SKILL_DB[key] && SKILL_DB[key].role === 'nuker';
+        }).length;
+        urgency += enemyNukers * 20;
+        
+        // 적 힐러 존재 시 긴급도 증가
+        const enemyHealers = enemies.filter(u => {
+            if (u.isDead) return false;
+            const key = u.getKey();
+            return SKILL_DB[key] && SKILL_DB[key].role === 'supp';
+        }).length;
+        urgency += enemyHealers * 15;
+        
+        return urgency;
+    },
+    
+    // 승리 조건 판단
+    determineWinCondition: function(allyHP, enemyHP, aliveAllies, aliveEnemies) {
+        const advantage = enemyHP > 0 ? (allyHP / enemyHP) : 2.0;
+        
+        if (advantage > 1.5 && aliveAllies > aliveEnemies) {
+            return 'SWEEP';  // 압도: 빠르게 밀어붙이기
+        } else if (advantage < 0.7 || aliveAllies < aliveEnemies) {
+            return 'STALL';  // 열세: 버티면서 역전 노리기
+        } else {
+            return 'TRADE';  // 균형: 효율적 교환전
+        }
+    },
+    
+    // 조합 분석
+    analyzeComposition: function(team) {
+        const composition = { healers: 0, tanks: 0, nukers: 0 };
+        
+        team.forEach(u => {
+            if (u.isDead) return;
+            const key = u.getKey();
+            if (!SKILL_DB[key]) return;
+            
+            const role = SKILL_DB[key].role;
+            if (role === 'supp') composition.healers++;
+            else if (role === 'tank') composition.tanks++;
+            else if (role === 'nuker') composition.nukers++;
+        });
+        
+        return composition;
+    }
+};
+
 
 const Game = {
     // [추가] 디버그 모드 설정
@@ -4779,6 +5221,20 @@ const Game = {
             else console.log(`%c[DEBUG] ${msg}`, 'color: #bada55; font-weight: bold;');
         }
     },
+    
+    // [신규] 유틸리티 함수: 큐 값으로 유닛 가져오기 (안전)
+    getUnitFromQueueValue: function(tVal) {
+        if (tVal === undefined || tVal === null) return null;
+        const team = tVal % 2 === 0 ? this.pTeam : this.eTeam;
+        const index = tVal % 2 === 0 ? Math.floor(tVal / 2) : Math.floor((tVal - 1) / 2);
+        return team[index] || null;
+    },
+    
+    // [신규] 유틸리티 함수: 현재 턴 유닛 가져오기
+    getCurrentUnit: function() {
+        return this.getUnitFromQueueValue(this.queue[this.curr]);
+    },
+    
     pool: [],
     selected: [],
     pTeam: [],
@@ -5464,13 +5920,37 @@ const Game = {
                         if (!this.eTeam.some(u => u.base === b)) this.eTeam.push(makeEnemy(this.eTeam.length, b, null));
                     }
                 } else if (this.difficulty === 'hard') {
-                    const used = new Set();
-                    while (this.eTeam.length < 3) {
-                        const b = ['Fire', 'Water', 'Tree', 'Metal', 'Earth', 'Light', 'Dark'][Math.floor(Math.random() * 7)];
-                        const e = [null, 'Light', 'Dark'][Math.floor(Math.random() * 3)];
-                        let key = `${b}-${e}`;
-                        if (!used.has(key)) { used.add(key); this.eTeam.push(makeEnemy(this.eTeam.length, b, e)); }
-                    }
+                    // ========================================
+                    // [Hard Mode] 상성 기반 적 조합 매칭 시스템
+                    // ========================================
+                    
+                    // 1. 플레이어 조합에 대한 카운터 찾기
+                    const counterIds = CounterMatrix.findCounters(this.pTeam);
+                    
+                    // 2. 카운터 조합 중 하나를 랜덤 선택 (상위 3개 중)
+                    const selectedId = counterIds[Math.floor(Math.random() * Math.min(3, counterIds.length))];
+                    const selectedComp = HighWinRateComps.find(c => c.id === selectedId);
+                    
+                    // 3. 선택된 조합이 있으면 사용, 없으면 랜덤 고승률 조합
+                    let enemyComp = selectedComp || HighWinRateComps[Math.floor(Math.random() * HighWinRateComps.length)];
+                    
+                    // 4. 적 팀 생성
+                    this.eTeam = enemyComp.team.map((key, i) => {
+                        let b, e;
+                        if (key === 'Normal') { 
+                            b = 'Light'; e = 'Dark'; 
+                        } else if (key.includes('-')) { 
+                            [b, e] = key.split('-'); 
+                        } else { 
+                            b = key; e = null; 
+                        }
+                        return makeEnemy(i, b, e);
+                    });
+                    
+                    // 5. 조합 정보 로깅
+                    console.log(`🎯 [Hard Mode] 적 조합: ${enemyComp.name} (${enemyComp.tier} 티어)`);
+                    console.log(`   태그: ${enemyComp.tags.join(', ')}`);
+                    console.log(`   카운터 이유: 플레이어 조합에 대한 ${counterIds.indexOf(selectedId) === 0 ? '최고' : '유력한'} 카운터`);
                 } else {
                     const used = new Set();
                     while (this.eTeam.length < 3) {
@@ -5510,6 +5990,20 @@ const Game = {
         if (this.difficulty === 'local') diffText = '📴 오프라인 1:1';
         
         this.log(`<span class='log-sys'>✨ 전투 시작! [${diffText}] (3vs3)</span>`);
+        
+        // [Hard Mode] 적 조합 정보 표시
+        if (this.difficulty === 'hard' && this.eTeam.length === 3) {
+            const enemyKeys = this.eTeam.map(u => u.getKey()).sort().join(',');
+            const matchedComp = HighWinRateComps.find(comp => {
+                const compKeys = comp.team.map(k => k === 'Normal' ? 'Light-Dark' : k).sort().join(',');
+                return compKeys === enemyKeys;
+            });
+            
+            if (matchedComp) {
+                this.log(`<span class='log-sys' style='color:#e74c3c;'>⚔️ 적 조합: <b>${matchedComp.name}</b> (${matchedComp.tier} 티어)</span>`);
+                this.log(`<span class='log-sys' style='color:#95a5a6;'>   전략: ${matchedComp.tags.join(', ')}</span>`);
+            }
+        }
 
         // [중요] 선/후공 보정 로직 (누락되었던 부분)
         const firstTurnUnitId = (this.queue[this.curr] % 2 === 0 ? this.queue[this.curr] / 2 : (this.queue[this.curr] - 1) / 2 + 3);
@@ -5923,7 +6417,7 @@ turn: function() {
                 // 상태이상 태그 생성
                 let tags = u.status.map(s => {
                     let c = 'tag';
-                    const map = {'POISON':'poison','FREEZE':'freeze','SILENCE':'silence','EVADE':'evade','BURN':'burn','BANISH':'banish','TRAP':'trap','BIND':'bind','GROWTH':'growth','ATK_DOWN':'atkdown','BLIND':'blind','IMMUNITY':'immunity','HEAL_DOWN':'healdown','LIGHT_MIGHT':'atkup','LIFESTEAL_BUFF':'lifesteal','ATK_BUFF_SMALL':'atkup_s','START_IMMUNITY':'start-immunity','ROOT_GUARD':'bind','MC_WAIT':'mc-wait','MC_READY':'mc-ready','EARTH_RECOIL':'atkdown'};
+                    const map = {'POISON':'poison','FREEZE':'freeze','SILENCE':'silence','EVADE':'evade','BURN':'burn','BANISH':'banish','TRAP':'trap','BIND':'bind','GROWTH':'growth','ATK_DOWN':'atkdown','ATK_DOWN_FEAR':'atkdown','BLIND':'blind','IMMUNITY':'immunity','HEAL_DOWN':'healdown','LIGHT_MIGHT':'atkup','LIFESTEAL_BUFF':'lifesteal','ATK_BUFF_SMALL':'atkup_s','START_IMMUNITY':'start-immunity','ROOT_GUARD':'bind','MC_WAIT':'mc-wait','MC_READY':'mc-ready','EARTH_RECOIL':'atkdown'};
                     if (s.type.includes('PROVOKED')) c += ' taunt';
                     else if (s.type.startsWith('KARMA_VICTIM')) c += ' karma';
                     else if (map[s.type]) c += ` ${map[s.type]}`;
@@ -5936,7 +6430,7 @@ turn: function() {
                 }
 
                 let txt = s.type;
-                const tMap = {'POISON':'독','FREEZE':'빙결','SILENCE':'침묵','DMG_RED':'방어↑','EVADE':'회피','BURN':'화상','TRAP':'속박','BANISH':'추방','BIND':'결속','GROWTH':'성장','ATK_DOWN':'공격↓','BLIND':'실명','IMMUNITY':'면역','HEAL_DOWN':`💔-${s.val}%`,'LIGHT_MIGHT':'공격↑','LIFESTEAL_BUFF':'🩸흡혈','ATK_BUFF_SMALL':'🔥공격↑','START_IMMUNITY':'🛡️선공방어','ROOT_GUARD':'🪵수호','MC_WAIT':'🌀세뇌중','MC_READY':'🧠조종','EARTH_RECOIL':'💔반동'};
+                const tMap = {'POISON':'독','FREEZE':'빙결','SILENCE':'침묵','DMG_RED':'방어↑','EVADE':'회피','BURN':'화상','TRAP':'속박','BANISH':'추방','BIND':'결속','GROWTH':'성장','ATK_DOWN':'공격↓','ATK_DOWN_FEAR':'😱공포-20%','BLIND':'실명','IMMUNITY':'면역','HEAL_DOWN':`💔-${s.val}%`,'LIGHT_MIGHT':'공격↑','LIFESTEAL_BUFF':'🩸흡혈','ATK_BUFF_SMALL':'🔥공격↑','START_IMMUNITY':'🛡️선공방어','ROOT_GUARD':'🪵수호','MC_WAIT':'🌀세뇌중','MC_READY':'🧠조종','EARTH_RECOIL':'💔반동'};
 
                 if (s.type.includes('PROVOKED')) txt = '도발';
                 else if (s.type.startsWith('KARMA_VICTIM')) txt = '👁️업보';
@@ -5989,9 +6483,19 @@ turn: function() {
                 const activeUnit = (tVal !== undefined) ? (tVal % 2 === 0 ? this.pTeam[Math.floor(tVal / 2)] : this.eTeam[Math.floor((tVal - 1) / 2)]) : null;
                 
                 let matchupBadge = '';
-                // [Fix] 온라인 모드 대응: team 비교 대신 배열 포함 여부로 확인
-                const isMyTurn = activeUnit && this.pTeam.includes(activeUnit);
-                const isEnemyUnit = this.eTeam.includes(u);
+                // [Fix] PvP 모드 대응: 1P, 2P 모두 상성 표시기 표시
+                let isMyTurn, isEnemyUnit;
+                
+                if (this.mode === 'pvp') {
+                    // PvP (로컬/온라인 공통): 턴 기반 상성 표시
+                    // 현재 턴인 유닛이 있으면 해당 유닛의 시점에서 상성 표시
+                    isMyTurn = activeUnit !== null;
+                    isEnemyUnit = activeUnit && u.team !== activeUnit.team;
+                } else {
+                    // PvE: 내 팀(플레이어) 기준
+                    isMyTurn = activeUnit && this.pTeam.includes(activeUnit);
+                    isEnemyUnit = this.eTeam.includes(u);
+                }
                 
                 // 조건: 현재 내 턴이고, 그리는 대상이 적일 때
                 if (isMyTurn && isEnemyUnit && !u.isDead) {
@@ -6353,6 +6857,20 @@ endTurn: function(isFast = false) {
         if (type === 'dmg') unit.stats.dmg += amount;
         if (type === 'shield') unit.stats.shieldGiven += amount;
         if (type === 'heal') unit.stats.heal += amount;
+        
+        // [신규] 세뇌된 유닛의 딜/힐은 실제 컨트롤러(Dark-Dark)의 통계에도 반영
+        if (this.isMindControlling && this.isMindControlling.id === unit.id && this.currentMCCasterId !== undefined) {
+            const allUnits = [...this.pTeam, ...this.eTeam];
+            const controller = allUnits.find(u => u.id === this.currentMCCasterId);
+            if (controller && !controller.isDead) {
+                if (type === 'dmg') controller.stats.dmg += amount;
+                if (type === 'shield') controller.stats.shieldGiven += amount;
+                if (type === 'heal') controller.stats.heal += amount;
+                // 컨트롤러의 각성도 체크
+                controller.checkAwakening();
+            }
+        }
+        
         unit.checkAwakening();
     },
     input: function(u) {
@@ -6759,6 +7277,20 @@ ai: function(u) {
                 const supportTypes = ['HEAL', 'BUFF', 'TARGET_BUFF', 'SELF_BUFF', 'ALL_ALLY', 'ALLY'];
                 return supportKeywords.some(kw => desc.includes(kw)) || supportTypes.includes(type);
             };
+            
+            // [NEW] 헬퍼 함수: 힐 양 추출
+            this.extractHealAmount = (desc) => {
+                if (!desc) return 0;
+                const match = desc.match(/HP\+(\d+)/i) || desc.match(/(\d+)\s*회복/);
+                return match ? parseInt(match[1]) : 0;
+            };
+            
+            // [NEW] 헬퍼 함수: 쉴드 양 추출
+            this.extractShieldAmount = (desc) => {
+                if (!desc) return 0;
+                const match = desc.match(/쉴드\+?(\d+)/i);
+                return match ? parseInt(match[1]) : 0;
+            };
 
             // ⚔️ [AI 업데이트 V4] 공격 점수 계산 (개선판)
             const getAttackScore = (target, skillIdx) => {
@@ -6790,7 +7322,7 @@ ai: function(u) {
                     score += baseDmg;
                 }
                 
-                // 🧠 [NEW] 광역기 효율 재계산 (다중 킬각 가중치)
+                // 🧠 [NEW] 광역기 효율 재계산 (다중 킬각 가중치 + 상황 분석)
                 if (['AOE', 'ALL_ENEMY', 'NUKE_PER'].includes(sk.type) && skillIdx > 0) {
                     let killCount = 0;
                     let aoeBonus = 0;
@@ -6811,9 +7343,28 @@ ai: function(u) {
                     // 다중 킬 보너스
                     if (killCount >= 2) aoeBonus += 10000;
                     
-                    // 1대1 광역기 낭비 방지 강화
-                    if (aliveEnemies.length === 1 && killCount === 0) {
-                        aoeBonus -= 5000;
+                    // [NEW] 상황 분석 기반 판단
+                    const situation = CombatAnalyzer.evaluateSituation(u.team);
+                    
+                    // 1:1 상황
+                    if (aliveEnemies.length === 1) {
+                        if (situation.winCondition === 'SWEEP' && killCount > 0) {
+                            aoeBonus += 2000; // 압도적일 때는 빠르게 끝내기
+                        } else if (situation.phase === 'EARLY') {
+                            aoeBonus -= 6000; // 초반 1:1에서 광역기는 낭비
+                        } else {
+                            aoeBonus -= 5000; // 일반적으로 비효율
+                        }
+                    }
+                    
+                    // 초반 단계에서 자원 관리
+                    if (situation.phase === 'EARLY' && situation.advantage < 1.2 && killCount === 0) {
+                        aoeBonus -= 4000; // 초반에 킬각 없으면 쿨다운 아끼기
+                    }
+                    
+                    // 열세 상황에서는 광역 딜 중요
+                    if (situation.winCondition === 'STALL' && aliveEnemies.length >= 2) {
+                        aoeBonus += 3000; // 버티기 위해 광역 압박 필요
                     }
                     
                     score += aoeBonus;
@@ -6912,7 +7463,7 @@ ai: function(u) {
                     }
                 }
             
-                // 🟢 Dark-Dark(심연) 세뇌 로직
+                // 🟢 Dark-Dark(심연) 세뇌 로직 개선
                 if (u.getKey() === 'Dark-Dark' && skillIdx === 2) {
                     // [Patch v19.06] 동족상잔 방지: 적이 Dark-Dark면 세뇌 시도 금지 (면역/효율 문제)
                     if (target.getKey() === 'Dark-Dark') {
@@ -6936,6 +7487,20 @@ ai: function(u) {
                         } else {
                             const targetKey = target.getKey();
                             
+                            // [NEW] 턴 순서 기반 타이밍 최적화
+                            const upcomingHealer = PredictionEngine.findUpcomingEnemyHealer(u.team, 3);
+                            
+                            // 적 힐러가 곧 행동할 예정이고, 그 힐러를 세뇌할 수 있다면 최우선
+                            if (upcomingHealer && upcomingHealer.unit.id === target.id && upcomingHealer.turnsAway <= 2) {
+                                score += 12000; // 힐러 턴 직전 세뇌 = 최고 효율
+                            }
+                            
+                            // 다음 턴에 행동할 강력한 적이면 우선순위
+                            const turnsUntilTarget = PredictionEngine.getTurnsUntilAction(target);
+                            if (turnsUntilTarget === 1 && target.atk >= 80) {
+                                score += 8000; // 다음 턴 강타 막기
+                            }
+                            
                             if (typeof SKILL_DB !== 'undefined' && SKILL_DB[targetKey]) {
                                 const role = SKILL_DB[targetKey].role;
 
@@ -6943,7 +7508,7 @@ ai: function(u) {
                                     score += 300;
                                 }
                                 else if (role === 'supp') {
-                                    score += 200;
+                                    score += 500; // 힐러 세뇌 가치 상승
                                 }
                                 else if (role === 'tank') {
                                     score += 50;
@@ -6977,9 +7542,35 @@ ai: function(u) {
                     }
                 }
 
-                // E. 고난이도 평타 억제
-                if (this.difficulty !== 'easy' && skillIdx === 0) {
-                     if (!u.hasStatus('SILENCE')) score -= 2000;
+                // E. 고난이도 평타 억제 (대폭 강화)
+                if (skillIdx === 0 && !u.hasStatus('SILENCE')) {
+                    // 난이도별 평타 억제 강도
+                    const basicAttackPenalty = {
+                        'easy': 0,        // 쉬움: 페널티 없음
+                        'normal': -2000,  // 보통: 중간 페널티
+                        'hard': -15000,   // 어려움: 강력한 페널티
+                        'hell': -25000    // 지옥: 거의 사용 금지
+                    }[this.difficulty] || -2000;
+                    
+                    score += basicAttackPenalty;
+                    
+                    // [추가] 킬각이 아닌 평타는 더욱 강하게 억제
+                    if (target.hp > baseDmg * 1.5) {
+                        score += basicAttackPenalty * 0.5; // 추가 페널티
+                    }
+                }
+
+                // [추가] 고난이도 스킬 우선 전략
+                // 침묵 상태가 아닌데 스킬을 사용하면 최소 점수 보장
+                if (skillIdx > 0 && !u.hasStatus('SILENCE')) {
+                    if (this.difficulty === 'hard' || this.difficulty === 'hell') {
+                        // 스킬 점수가 너무 낮으면 최소 점수 보장
+                        // (평타보다는 항상 높도록)
+                        const minSkillScore = -10000;
+                        if (score < minSkillScore) {
+                            score = minSkillScore;
+                        }
+                    }
                 }
 
                 return score * difficultyMultiplier;
@@ -6989,10 +7580,47 @@ ai: function(u) {
             const getSupportScore = (target, skillIdx) => {
                 if (!target || target.isDead) return -9999;
 
-                // ✅ [FIX] 나무(Tree) 최적화: 혼자 남았거나 이미 켜져 있으면 사용 금지
+                // ✅ [개선] 나무(Tree) 최적화: 사망 위험 예측 추가
                 if (u.base === 'Tree' && !u.extra && skillIdx === 1) {
                     if (u.hasStatus('ROOT_GUARD')) return -9999; // 이미 켜져 있음
                     if (aliveAllies.length <= 1) return -9999; // 혼자 남음
+                    
+                    // [NEW] 아군 중 2턴 내 사망 위험이 있는지 예측
+                    const dyingAlly = aliveAllies.find(a => PredictionEngine.predictDeath(a, 2));
+                    if (dyingAlly) {
+                        score += 8000; // 최우선! 사망 직전 아군 보호
+                        if (target.id !== dyingAlly.id) {
+                            return -5000; // 위험한 아군이 아니면 다른 대상 선택
+                        }
+                    }
+                }
+
+                // ✅ [개선] Tree-Dark 결속 로직: 사망 위험 예측
+                if (u.getKey() === 'Tree-Dark' && skillIdx === 2) {
+                    // 1. 이미 결속된 아군 있으면 금지
+                    if (aliveAllies.some(a => a.linkedAllyId)) {
+                        return -9999;
+                    }
+                    
+                    // 2. 혼자 남으면 무의미
+                    if (aliveAllies.length <= 1) {
+                        return -9999;
+                    }
+                    
+                    // 3. [NEW] 사망 위험 예측 - 최우선 대상
+                    const dyingAlly = aliveAllies.find(a => PredictionEngine.predictDeath(a, 2));
+                    if (dyingAlly) {
+                        if (target.id === dyingAlly.id) {
+                            score += 15000; // 최최우선!
+                        } else {
+                            return -8000; // 다른 아군은 선택 금지
+                        }
+                    }
+                    
+                    // 4. 위험 없으면 체력 낮은 아군에게
+                    const targetHpPct = target.hp / target.maxHp;
+                    if (targetHpPct < 0.4) score += 3000;
+                    else if (targetHpPct > 0.8) score -= 2000;
                 }
 
                 // ✅ [FIX] 푸른불(Fire-Light) S1 최적화: 혼자 남았거나 이미 켜져 있으면 사용 금지
@@ -7013,14 +7641,30 @@ ai: function(u) {
                 // A. 힐 효율
                 if (skillDesc.includes('힐') || skillDesc.includes('HP') || sk.type === 'HEAL') {
                     const pct = target.hp / target.maxHp;
-                    if (pct < 0.35) score += 5000; 
-                    else if (pct > 0.9) score -= 2000; 
-                    else score += (target.maxHp - target.hp) * 2.0;
+                    
+                    // [NEW] 오버힐 방지 강화
+                    const healAmount = this.extractHealAmount(skillDesc);
+                    const missingHP = target.maxHp - target.hp;
+                    
+                    if (healAmount > 0 && healAmount > missingHP * 1.8) {
+                        score -= 4000; // 과다 힐 심각한 감점
+                    } else if (pct < 0.35) {
+                        score += 5000; 
+                    } else if (pct > 0.9) {
+                        score -= 2000; 
+                    } else {
+                        score += (target.maxHp - target.hp) * 2.0;
+                    }
                     
                     // 🆕 [NEW] 힐러 자신이 위험하면 자가 힐 우선
                     const isSelfHealer = SKILL_DB[k] && SKILL_DB[k].role === 'supp';
                     if (isSelfHealer && target.id === u.id && target.hp < target.maxHp * 0.4) {
                         score += 3000;
+                    }
+                    
+                    // [NEW] 사망 위험 아군이면 힐 최우선
+                    if (PredictionEngine.predictDeath(target, 2)) {
+                        score += 10000;
                     }
                 }
 
@@ -7039,10 +7683,21 @@ ai: function(u) {
                     }
                 }
 
-                // C. 쉴드 낭비 방지
+                // C. 쉴드 낭비 방지 강화
                 if (skillDesc.includes('쉴드')) {
-                    if (target.shield >= 300) score -= 5000; 
-                    else if (target.shield < 50) score += 500;
+                    // [NEW] 오버쉴드 방지
+                    const shieldAmount = this.extractShieldAmount(skillDesc);
+                    const currentShield = target.shield;
+                    const maxUsefulShield = 300;
+                    
+                    if (currentShield >= 300) {
+                        score -= 8000; // 이미 쉴드 충분
+                    } else if (shieldAmount > 0 && (currentShield + shieldAmount) > maxUsefulShield) {
+                        const waste = (currentShield + shieldAmount - maxUsefulShield);
+                        score -= waste * 15; // 낭비량에 비례해서 감점
+                    } else if (currentShield < 50) {
+                        score += 500;
+                    }
                     
                     // 🆕 [NEW] 적 광역딜러 대비 선제 쉴드
                     if (this.difficulty === 'hard' || this.difficulty === 'hell') {
@@ -7108,12 +7763,45 @@ ai: function(u) {
                     });
                 });
             }
+            
+            // [NEW] 상황 분석 기반 점수 조정
+            const situation = CombatAnalyzer.evaluateSituation(u.team);
+            
+            actions.forEach(action => {
+                // 필사적 상황: 수비 행동 우선
+                if (situation.phase === 'DESPERATE' && situation.winCondition === 'STALL') {
+                    if (action.type === 'support') {
+                        action.score *= 1.5; // 수비 행동 50% 가중
+                    }
+                }
+                
+                // 압도 상황: 공격 행동 우선
+                if (situation.phase === 'EARLY' && situation.winCondition === 'SWEEP') {
+                    if (action.type === 'attack' && action.idx > 0) {
+                        action.score *= 1.3; // 공격 스킬 30% 가중
+                    }
+                }
+                
+                // 긴급 상황: 힐/쉴드 최우선
+                if (situation.urgency > 50) {
+                    if (action.type === 'support') {
+                        action.score *= (1 + situation.urgency / 100);
+                    }
+                }
+            });
 
-            // 디버그 로그
+            // 디버그 로그 (개선)
             if (typeof DEBUG !== 'undefined' && DEBUG.enabled) {
                 console.groupCollapsed(`🤖 [${u.name}] 행동 선택 (난이도: ${this.difficulty})`);
+                console.log(`상황: ${situation.phase}, 승리조건: ${situation.winCondition}, 긴급도: ${situation.urgency}`);
+                console.log(`침묵 상태: ${silenced ? 'YES' : 'NO'}`);
                 const debugActions = [...actions].sort((a, b) => b.score - a.score);
-                debugActions.slice(0, 5).forEach(a => console.log(`${a.idx===0?'평타':(a.idx===1?'S1':'S2')} -> ${a.target.name} (${a.score.toFixed(0)})`));
+                console.log('=== 상위 5개 선택지 ===');
+                debugActions.slice(0, 5).forEach((a, i) => {
+                    const skillName = a.idx === 0 ? '평타' : (a.idx === 1 ? 'S1' : 'S2');
+                    const targetInfo = `${a.target.name} (HP: ${a.target.hp}/${a.target.maxHp})`;
+                    console.log(`${i+1}. ${skillName} → ${targetInfo} | 점수: ${a.score.toFixed(0)}`);
+                });
                 console.groupEnd();
             }
 
@@ -7121,12 +7809,27 @@ ai: function(u) {
             actions.sort((a, b) => (b.score + Math.random()*randomnessFactor) - (a.score + Math.random()*randomnessFactor));
             let best = actions[0];
 
-            if (!best || !best.target || best.score < -5000) {
-                best = { 
-                    idx: 0, 
-                    target: aliveEnemies[Math.floor(this.netRandom() * aliveEnemies.length)],
-                    type: 'attack'
-                };
+            // [개선] Fallback 로직: 극단적으로 나쁜 선택만 리셋
+            if (!best || !best.target || best.score < -20000) {
+                // 침묵 상태가 아니면 스킬 중에서 선택
+                if (!silenced && actions.length > 1) {
+                    const skillActions = actions.filter(a => a.idx > 0);
+                    if (skillActions.length > 0) {
+                        best = skillActions[0]; // 가장 점수 높은 스킬
+                    } else {
+                        best = { 
+                            idx: 0, 
+                            target: aliveEnemies[Math.floor(this.netRandom() * aliveEnemies.length)],
+                            type: 'attack'
+                        };
+                    }
+                } else {
+                    best = { 
+                        idx: 0, 
+                        target: aliveEnemies[Math.floor(this.netRandom() * aliveEnemies.length)],
+                        type: 'attack'
+                    };
+                }
             }
 
             if (!isBrainwashed && best.target && best.target.team === u.team) {
@@ -7498,51 +8201,57 @@ ai: function(u) {
     calc: (a, d) => {
         let v = 1.0;
         let t = '';
+        
         if (a.isNormal) {
+            // 노말 속성의 강타
             if (d.isNormal || d.isEnhanced) {
-                v = 1.2;
+                v = GAME_CONSTANTS.DAMAGE_MULTIPLIER.WEAKNESS;
                 t = '(강타)';
             }
         } else {
-            const w = {
+            // 속성 상성 관계
+            const weaknesses = {
                 'Fire': ['Metal', 'Tree'],
                 'Water': ['Fire', 'Metal'],
                 'Tree': ['Water', 'Earth'],
                 'Metal': ['Tree', 'Earth'],
                 'Earth': ['Fire', 'Water']
             };
-            const ew = {
+            const enhancedWeaknesses = {
                 'Light': ['Dark'],
                 'Dark': ['Light']
             };
-            // [Balance] 기초 5속성 정의
             const basicElements = ['Fire', 'Water', 'Tree', 'Metal', 'Earth'];
 
             if (d.isNormal) {
-                // [수정] 순수 기초 5속성(보조 속성이 없는 경우)에게만 1.2배 피해
-                // Light, Dark가 섞인 복합 속성이나, 순수 Light/Dark에게는 1.0배
+                // 순수 기초 5속성만 노말에게 약점 피해
                 if (basicElements.includes(a.base) && !a.extra) {
-                    v = 1.2;
+                    v = GAME_CONSTANTS.DAMAGE_MULTIPLIER.WEAKNESS;
                     t = '(약점)';
                 }
             } else {
-                if (w[a.base]?.includes(d.base) || ew[a.base]?.includes(d.base)) {
-                    v = 1.2;
+                // 일반 약점 체크
+                if (weaknesses[a.base]?.includes(d.base) || enhancedWeaknesses[a.base]?.includes(d.base)) {
+                    v = GAME_CONSTANTS.DAMAGE_MULTIPLIER.WEAKNESS;
                     t = '(약점)';
-                } else if (w[d.base]?.includes(a.base)) {
-                    v = 0.8;
+                } 
+                // 저항 체크
+                else if (weaknesses[d.base]?.includes(a.base)) {
+                    v = GAME_CONSTANTS.DAMAGE_MULTIPLIER.RESISTANCE;
                     t = '(저항)';
                 }
             }
         }
-        if (v === 1.2 && a.extra && d.extra && ((a.extra === 'Light' && d.extra === 'Dark') || (a.extra === 'Dark' && d.extra === 'Light'))) {
-            v = 1.3;
+        
+        // 치명타: 약점이면서 Light vs Dark 또는 Dark vs Light
+        if (v === GAME_CONSTANTS.DAMAGE_MULTIPLIER.WEAKNESS && 
+            a.extra && d.extra && 
+            ((a.extra === 'Light' && d.extra === 'Dark') || (a.extra === 'Dark' && d.extra === 'Light'))) {
+            v = GAME_CONSTANTS.DAMAGE_MULTIPLIER.CRITICAL;
             t = '(치명타!)';
         }
-        return {
-            v,
-            t
-        };
+        
+        return { v, t };
     }
 };
 // ==========================================
